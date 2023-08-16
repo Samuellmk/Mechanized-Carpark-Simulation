@@ -11,6 +11,12 @@ class Lift:
         self.env = env
         self.lift_num = lift_num
         self.travel_times = travel_times
+        self.lift_pos = 0
+
+    def time_taken_from_origin_to_dest(self, dest):
+        time_taken = (abs(self.lift_pos - dest)) * (c.HEIGHT_PER_LEVEL / c.LIFT_SPEED)
+        self.lift_pos = dest
+        return time_taken
 
 
 # v_lot is wrt to x axis

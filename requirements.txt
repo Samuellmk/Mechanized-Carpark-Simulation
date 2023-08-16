@@ -9,7 +9,7 @@ matplotlib==3.7.1
 mypy-extensions==1.0.0
 numpy==1.24.3
 packaging==23.1
-Panda3D==1.10.13
+pandas==2.0.3
 pathspec==0.11.2
 Pillow==9.5.0
 platformdirs==3.9.1
@@ -17,7 +17,10 @@ pycodestyle==2.10.0
 pygame==2.4.0
 pyparsing==3.0.9
 python-dateutil==2.8.2
+pytz==2023.3
 scipy==1.10.1
 simpy==4.0.1
 simpy-helpers==1.2.0
 six==1.16.0
+tenacity==8.2.3
+tzdata==2023.3
