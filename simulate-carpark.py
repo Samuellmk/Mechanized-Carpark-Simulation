@@ -22,7 +22,7 @@ import constants as c
 from lift import Lift, create_lifts_data
 from parking_lot import Parking_Lot
 from shuttle import Shuttle
-from graph import plot_waiting_time_retrieval, plot_timeline_each_car
+from graph import plot_waiting_time_retrieval
 
 waiting_time_retrieval = {}
 # Will add more data to this dataframe in the future
@@ -248,8 +248,6 @@ def print_stats(env, carpark):
     print("%d cars waiting for carpark lots %s " % (cars_queued_num, cars_queued))
 
     # plot_waiting_time_retrieval(waiting_time_retrieval)
-
-    # plot_timeline_each_car(events)
 
 
 if __name__ == "__main__":
