@@ -14,11 +14,12 @@ PALLET_SPEED = 45  # m/min
 ROTARY = 3.5  # rpm
 # LIFT_ACC no data
 LIFT_SPEED = 65  # m/min
-DRIVE_IN_OUT = (
-    1 / 6,
-    0.51,
-)  # 10-30 seconds for driver to start/stop engine and get out
-RETRIEVAL_TIME = 0.01
+DRIVE_IN_OUT = (0.1, 0.16)
+# DRIVE_IN_OUT = (
+#     1 / 6,
+#     0.51,
+# )  # 10-30 seconds for driver to start/stop engine and get out
+RETRIEVAL_TIME = 0.2
 
 RANDOM_SEEDS = 12345
 CAR_ARRIVAL_RATE = 2  # rate/min
@@ -26,3 +27,13 @@ CAR_NUMBER = 10
 
 # coordinate
 LIFTS = [9, 12, 15, 18]
+
+# animation
+WIDTH, HEIGHT = 1000, 800
+GRID_WIDTH, GRID_HEIGHT = 32, 48
+TOTAL_WIDTH = 26 * GRID_WIDTH + 4
+CAR_VEL = 5
+
+FACTOR = 3.75  # 16x fast foward
+FPS = 60
+TOLERANCE = 5.0
