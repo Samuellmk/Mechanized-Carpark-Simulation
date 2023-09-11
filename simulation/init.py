@@ -10,12 +10,14 @@ from carpark import Carpark
 from simulation.utils import create_lifts_data
 
 
-def sim_init(env, carpark_layout):
+def sim_init(env, carpark_layout, stats_box):
     # Create Lifts Store
     lifts_travel_data = create_lifts_data(LIFTS)
-    lifts_store = simpy.Store(env, capacity=NUM_OF_LIFTS)
+    lifts_store = simpy.FilterStore(env, capacity=NUM_OF_LIFTS)
     for i in range(1, NUM_OF_LIFTS + 1):
-        lifts_store.items.append(Lift(env, i, lifts_travel_data[i - 1]))
+        lifts_store.items.append(
+            Lift(env, i, lifts_travel_data[i - 1], DEFAULT_LIFT_STATE)
+        )
 
     parking_lots_sets = []
     shuttles_stores = []
@@ -37,5 +39,6 @@ def sim_init(env, carpark_layout):
         lifts_store,
         shuttles_stores,
         carpark_layout,
+        stats_box,
     )
     return carpark

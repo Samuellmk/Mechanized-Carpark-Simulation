@@ -2,21 +2,60 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
+import os
 import simpy
+from simpy.util import start_delayed
+import random
 from scipy.stats import poisson, expon
 from constants import *
 
 
-def vehicle_arrival(env, carpark, num_cars, car):
-    for car_id in range(1, num_cars + 1):
-        # Poisson distribution
-        carpark.parking_queue.append(car_id)
-        print(
-            "Car %s arrived at the entrance of the carpark at %.2f." % (car_id, env.now)
-        )
-        car.request_lot(carpark)
+from classes.vehicle import Vehicle
 
-        next_car = poisson.rvs(CAR_ARRIVAL_RATE)
+
+def run(env, renderer, carpark):
+    parking_lot_request = carpark.total_parking_lot_resources.request()
+    yield parking_lot_request
+    vehicle = carpark.parking_queue.pop(0)
+
+    renderer.add(vehicle)
+    yield env.process(carpark.park(vehicle))
+
+    retrieval_time = expon.rvs(scale=RETRIEVAL_TIME)
+    print(
+        "Car %d will be retrieved from parking lot %d at %.2f (+%.2f)"
+        % (
+            vehicle.id,
+            vehicle.parking_lot[1],
+            env.now + retrieval_time,
+            retrieval_time,
+        )
+    )
+    # Wait for the retrieval time
+    yield start_delayed(
+        env, carpark.exit(vehicle, parking_lot_request), delay=retrieval_time
+    )
+
+
+def vehicle_arrival(env, renderer, carpark, num_cars):
+    file_list = os.listdir(os.getcwd() + "\\assets\\Cars")
+    car_names = [os.path.splitext(file)[0] for file in file_list]
+
+    for car_id in range(1, num_cars + 1):
+        car_name = random.choice(car_names)
+        vehicle = Vehicle(WIDTH // 2, 700, env, id=car_id, car_png=car_name)
+        carpark.parking_queue.append(vehicle)
+
+        print(
+            "Car %d arrived at the entrance of the carpark at %.2f." % (car_id, env.now)
+        )
+        env.process(run(env, renderer, carpark))
+
+        next_car = round(expon.rvs(scale=CAR_ARRIVAL_RATE), 2)
+        print(
+            "Next Car %d arrived at the entrance of the carpark at %.2f."
+            % (car_id + 1, env.now + next_car)
+        )
         yield env.timeout(next_car)
 
 
@@ -126,3 +165,9 @@ def create_lifts_data(lifts_pos):
         lifts.append(cur_lots)
 
     return lifts
+
+
+def set_stat_time(env, stats_box):
+    while True:
+        stats_box.stats["Tick"] = round(env.now, 2)
+        yield env.timeout(0.1)

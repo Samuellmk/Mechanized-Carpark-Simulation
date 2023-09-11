@@ -9,16 +9,22 @@ from constants import *
 DIRECTION_MAP = {"up": 0, "right": 90, "down": 180, "left": 270}
 
 
+def get_key_by_value(dict, value):
+    for key, val in dict.items():
+        if val == value:
+            return key
+
+
 class Vehicle(pygame.sprite.Sprite):
-    def __init__(self, x, y, env, id):
+    def __init__(self, x, y, env, id, car_png):
         super().__init__()
+        self.car_png_name = car_png
         self.velo = Vector2(0, 0)
         self.SPRITES = load_sprite_sheets("Cars", True)
         self.direction = "up"
         self.pos = Vector2(x, y)
-        self.sprite = self.SPRITES["Car_1_" + self.direction][0]
+        self.sprite = self.SPRITES[self.car_png_name + "_" + self.direction][0]
         self.rect = self.sprite.get_rect(topleft=(x, y))
-        self.mask = pygame.mask.from_surface(self.sprite)
         self.destination = Vector2(0, 0)
         self.orientation = 0
         self.final_ori = 0
@@ -32,13 +38,12 @@ class Vehicle(pygame.sprite.Sprite):
         self.parking_lot = [None, None]  # (level, lot)
 
     def update_sprite(self):
-        sprite_sheet_name = "Car_1" + "_" + self.direction
+        sprite_sheet_name = self.car_png_name + "_" + self.direction
         self.sprite = self.SPRITES[sprite_sheet_name][0]
         self.update()
 
     def update(self):
         self.rect = self.sprite.get_rect(topleft=(self.rect.x, self.rect.y))
-        self.mask = pygame.mask.from_surface(self.sprite)
 
     def __call__(self, win):
         self.update_sprite()
@@ -50,7 +55,7 @@ class Vehicle(pygame.sprite.Sprite):
     def move(self):
         # print("vehicle: ", self.pos, self.destination)
         distance = self.destination - self.pos
-        if distance.length() < TOLERANCE:
+        if distance.length() < TOLERANCE and self.velo != 0:
             self.velo = Vector2(0, 0)
             self.pos = Vector2(self.destination)
             self.rect.topleft = self.destination
@@ -61,7 +66,6 @@ class Vehicle(pygame.sprite.Sprite):
 
     def fading(self):
         if self.fade:
-            print(self.alpha)
             self.alpha = max(0, self.alpha - 5)  # alpha should never be < 0.
             self.sprite.fill(
                 (255, 255, 255, self.alpha), special_flags=pygame.BLEND_RGBA_MULT
@@ -73,6 +77,9 @@ class Vehicle(pygame.sprite.Sprite):
         if abs(self.final_ori - self.orientation) <= TOLERANCE:
             self.rotation_speed = 0
             self.orientation = self.final_ori
+            self.direction = get_key_by_value(
+                DIRECTION_MAP, self.final_ori
+            )  # Make sure is facing correctly
 
         self.orientation %= 360
 
@@ -82,11 +89,3 @@ class Vehicle(pygame.sprite.Sprite):
                 break
 
         self.orientation += self.rotation_speed
-
-    def run(self, carpark):
-        parking_lot_request = carpark.total_parking_lot_resources.request()
-        yield parking_lot_request
-        vehicle = carpark.parking_queue.pop(0)
-
-        yield self.env.process(carpark.park(vehicle))
-        self.env.process(carpark.exit(vehicle, parking_lot_request))

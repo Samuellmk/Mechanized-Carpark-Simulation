@@ -77,6 +77,16 @@ def findCoord(level_layout, destObj):
             return sprite.rect.topleft
 
 
+def findAllLifts(layout, lift):
+    lift_sprites = {}
+    for floor_no, level_group in layout.items():
+        for sprite in level_group.sprites():
+            if isinstance(sprite, Lift_Floor) and sprite.id == lift.lift_num:
+                lift_sprites[floor_no] = sprite
+
+    return lift_sprites
+
+
 def findShuttle(level_layout, shuttle):
     for sprite in level_layout.sprites():
         if isinstance(sprite, Shuttle_Floor) and sprite.id == shuttle.shuttle_num:
@@ -100,8 +110,10 @@ def moveOutOfLift(vehicle, dest_coord, time_duration):
 
 
 def moveShuttle(shuttle_sprite, time_duration, coord, lift=False):
-    dest_x, dest_y = coord
+    if time_duration == 0:
+        return
 
+    dest_x, dest_y = coord
     if lift:
         dest_x += GRID_WIDTH
 
@@ -144,3 +156,40 @@ def movePalletToLot(vehicle, time_duration, coord):
     dest_x, dest_y = coord
     y = (dest_y - vehicle.pos[1]) / (time_duration * FRAME_RATE)
     moveVehicle(vehicle, (0, y), (vehicle.pos[0], dest_y))
+
+
+def moveLift(env, layout, lift, dest, time_duration, has_car, vehicle=None):
+    # -ve = going down; +ve = going up; 0 = no change
+    no_of_levels = dest - lift.lift_pos
+    lifts_dict = findAllLifts(layout, lift)
+
+    if no_of_levels == 0:
+        sprite = lifts_dict[dest + 1]
+        return
+
+    each_level_time = time_duration / abs(no_of_levels)
+    while no_of_levels != 0:
+        old_pos = lift.lift_pos + 1
+        if no_of_levels < 0:
+            lift.lift_pos -= 1
+        else:
+            lift.lift_pos += 1
+        no_of_levels = dest - lift.lift_pos
+
+        print("Lift %d is moving at %.2f" % (lift.lift_num, env.now))
+        yield env.timeout(each_level_time)
+
+        lifts_dict[old_pos].toggle_Occupancy()
+        lifts_dict[lift.lift_pos + 1].toggle_Occupancy()
+
+        if has_car:
+            tp_x, tp_y = lifts_dict[lift.lift_pos + 1].rect.topleft
+            vehicle.pos[1] = tp_y
+
+
+def findGroundLiftCoord(layout, lift):
+    lifts_dict = findAllLifts(layout, lift)
+    ground_lift_sprite = lifts_dict[1]
+    sprite_x = ground_lift_sprite.rect.topleft[0]
+    sprite_y = ground_lift_sprite.rect.topleft[1]
+    return ground_lift_sprite.rect.topleft

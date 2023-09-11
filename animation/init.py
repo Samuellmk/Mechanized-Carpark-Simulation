@@ -64,27 +64,45 @@ class Parking_Floor(Object):
             (0, 0, 0),
         )
         self.image.blit(floor, (0, 0))
-        self.mask = pygame.mask.from_surface(self.image)
         self.add_text("P" + str(id), 18)
 
 
 class Lift_Floor(Object):
-    def __init__(self, x, y, width, height, id):
+    def __init__(self, x, y, width, height, id, level_no):
         super().__init__(x, y, width, height, id)
-        floor = generate_floor_texture(
+        self.id = id
+        self.floor = generate_floor_texture(
             width,
             height,
             join("assets", "Floor", "floor_tiles.png"),
             pygame.Rect(192, 0, 32, 32),
             (0, 0, 0),
         )
-        self.image.blit(floor, (0, 0))
-        self.mask = pygame.mask.from_surface(self.image)
-        self.add_text("L" + str(id), 18)
+        self.is_Occupied = False
+        self.default_state(level_no)
+        self.set_overlay()
+
+    def default_state(self, id):
+        if id == DEFAULT_LIFT_STATE:
+            self.toggle_Occupancy()
+
+    def set_overlay(self):
+        self.image.blit(self.floor, (0, 0))
+        self.add_text("Lift " + str(self.id), 18)
+        if not self.is_Occupied:
+            surface = pygame.Surface(
+                (self.image.get_width(), self.image.get_height()), pygame.SRCALPHA
+            )
+            surface.fill((106, 106, 106, 178))  # 60%
+            self.image.blit(surface, (0, 0))
+
+    def toggle_Occupancy(self):
+        self.is_Occupied = not self.is_Occupied
+        self.set_overlay()
 
 
 class Shuttle_Floor(Object):
-    def __init__(self, x, y, width, height, id):
+    def __init__(self, x, y, width, height, id, bounds):
         super().__init__(x, y, width, height, id)
         floor = generate_floor_texture(
             width,
@@ -94,17 +112,19 @@ class Shuttle_Floor(Object):
             (0, 0, 0),
         )
         self.image.blit(floor, (0, 0))
-        self.mask = pygame.mask.from_surface(self.image)
         self.add_text("S" + str(id), 18)
         self.velo = Vector2(0, 0)
         self.pos = Vector2(x, y)
         self.destination = Vector2(0, 0)
         self.default_pos = Vector2(x, y)
+        self.bounds = bounds
 
     def move(self):
-        # print("shuttle: ", self.pos)
+        # print("bounds: ", self.bounds)
+
+        self.pos[0] = max(self.bounds[0], min(self.pos[0], self.bounds[1]))
         distance = self.destination - self.pos
-        if distance.length() < TOLERANCE:
+        if distance.length() < TOLERANCE and self.velo != 0:
             self.velo = Vector2(0, 0)
             self.pos = Vector2(self.destination)
             self.rect.topleft = self.destination
@@ -195,27 +215,28 @@ class FloorLayout(pygame.sprite.Group):
 
     def create_lift_floors(self, floors_group):
         lift_offset = self.horizontal_offset + 224
-        for i, floor_number in enumerate(range(1, 5)):
+        for i, lift_no in enumerate(range(1, 5)):
             floors_group.append(
                 Lift_Floor(
                     lift_offset + i * (3 * self.GRID_WIDTH),
                     self.y_offset + 96,
                     3 * self.GRID_WIDTH,
                     self.GRID_HEIGHT,
-                    floor_number,
+                    lift_no,
+                    self.level_number - 1,
                 )
             )
 
     def create_south_parking_floors(self, floors_group):
         parking_offset_south = self.horizontal_offset + 608
-        for i, floor_number in enumerate(range(34, 40)):
+        for i, parking_no in enumerate(range(34, 40)):
             floors_group.append(
                 Parking_Floor(
                     parking_offset_south + i * self.GRID_WIDTH,
                     self.y_offset + 96,
                     self.GRID_WIDTH,
                     self.GRID_HEIGHT,
-                    floor_number,
+                    parking_no,
                 )
             )
         position_13 = self.horizontal_offset + GRID_WIDTH * 12
@@ -226,5 +247,9 @@ class FloorLayout(pygame.sprite.Group):
                 self.GRID_WIDTH,
                 self.GRID_HEIGHT,
                 id=1,
+                bounds=(
+                    self.horizontal_offset,
+                    self.horizontal_offset + GRID_WIDTH * 26,
+                ),
             )
         )
