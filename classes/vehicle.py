@@ -66,7 +66,7 @@ class Vehicle(pygame.sprite.Sprite):
 
     def fading(self):
         if self.fade:
-            self.alpha = max(0, self.alpha - 5)  # alpha should never be < 0.
+            self.alpha = max(0, self.alpha - 2.5)  # alpha should never be < 0.
             self.sprite.fill(
                 (255, 255, 255, self.alpha), special_flags=pygame.BLEND_RGBA_MULT
             )

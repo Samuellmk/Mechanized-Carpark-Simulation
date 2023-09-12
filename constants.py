@@ -21,7 +21,7 @@ DRIVE_IN_OUT = (
 RETRIEVAL_TIME = 60
 
 RANDOM_SEEDS = 12345
-CAR_ARRIVAL_RATE = 0.25  # 2  # rate/min
+CAR_ARRIVAL_RATE = 2  # rate/min
 MAX_CAR = 160
 
 DEFAULT_LIFT_STATE = 0  # index start from 0
@@ -33,12 +33,12 @@ LIFTS = [9, 12, 15, 18]
 WIDTH, HEIGHT = 1000, 800
 GRID_WIDTH, GRID_HEIGHT = 32, 48
 TOTAL_WIDTH = 26 * GRID_WIDTH + 4  # Border
-STATS_HEIGHT = 26
+STATS_HEIGHT = 32 * 2
+LIFT_IN_OUT_PX = 50
 
-FACTOR = 0.9  # 64x fast foward
-# FACTOR = 1.875  # 32x fast foward
+FACTOR = 0.47 # ~128x fast forward
+FACTOR = 0.9  # ~64x fast forward
+# FACTOR = 1.875  # 32x fast forward
 # FACTOR = 7.5
 FPS = 60
 TOLERANCE = 60 // FACTOR * 1.1
-
-# TODO: shuttle are being "deadlock"

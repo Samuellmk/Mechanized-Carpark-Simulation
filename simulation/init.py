@@ -3,10 +3,9 @@ import sys
 
 sys.path.append("F:\\NTU\\FYP\\Simulation\\classes")
 from classes.lift import Lift
-from classes.parking_lot import Parking_Lot
 from classes.shuttle import Shuttle
 from constants import *
-from carpark import Carpark
+from classes.carpark import Carpark
 from simulation.utils import create_lifts_data
 
 

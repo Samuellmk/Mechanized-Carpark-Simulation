@@ -1,12 +1,10 @@
-import simpy
 import random
 
 from constants import *
-from scipy.stats import poisson, expon
 from animation.utils import (
     findCoord,
     findShuttle,
-    moveToGroundLift,
+    moveIntoGroundLift,
     moveShuttle,
     moveLiftToPallet,
     moveOriginToLot,
@@ -119,16 +117,17 @@ class Carpark:
         # Possible deadlock when car wants to come out but lift is full
 
         floor_level = self.check_shuttle_availability()
-        if floor_level is not None:
-            return floor_level
-
         while floor_level == None:
             yield self.shuttle_available_event
             floor_level = self.check_shuttle_availability()
 
             if floor_level is not None:
                 break
-        return floor_level
+    
+        # Request for shuttle
+        # self.check_shuttle_usage(avail_shuttle_level)
+        shuttle = yield self.shuttles_stores[floor_level].get()
+        return floor_level, shuttle
 
     def check_shuttle_usage(self, level):
         cur_shuttle = self.shuttles_stores[level].items
@@ -139,8 +138,11 @@ class Carpark:
             )
 
     def park(self, vehicle):
+        # Log waiting time - START
+        time_start = self.env.now
+        
         # To which level? Check based on shuttle and available level
-        avail_shuttle_level = yield self.env.process(
+        avail_shuttle_level, shuttle = yield self.env.process(
             self.get_shuttle_level_availability()
         )  # index 0
 
@@ -155,12 +157,14 @@ class Carpark:
                 self.env, self.layout, lift, 0, lift_time_taken_to_ground, has_car=False
             )
         )
+        
+        self.stats_box.stats["Cars Waiting"] -= 1
 
         # Driver Driving into the lift delay
         ground_lift_coord = findCoord(self.layout[1], lift)
 
         drive_time_taken = random.uniform(*DRIVE_IN_OUT)
-        moveToGroundLift(vehicle, ground_lift_coord, drive_time_taken)
+        moveIntoGroundLift(vehicle, ground_lift_coord, drive_time_taken)
         yield self.env.timeout(drive_time_taken)
 
         print(
@@ -191,10 +195,6 @@ class Carpark:
             "Car %d took lift %d and at level %d at %.2f"
             % (vehicle.id, lift.lift_num, avail_shuttle_level + 1, self.env.now)
         )
-
-        # Request for shuttle
-        self.check_shuttle_usage(avail_shuttle_level)
-        shuttle = yield self.shuttles_stores[avail_shuttle_level].get()
 
         # Shuttle from somewhere moves to lift position
         shuttle_time_taken = shuttle.time_taken_to_destination(lift.lift_num, lift=True)
@@ -243,6 +243,10 @@ class Carpark:
             "Car %d parked at parking lot %d at %.2f"
             % (vehicle.id, parking_lot_num, self.env.now)
         )
+        
+        # Log waiting time - END
+        time_end = self.env.now
+        self.stats_box.waiting_stats["parking"][vehicle.id - 1] = round(time_end - time_start, 2)
 
         # Move shuttle back to default position and move back shuttle to default pos
         # TODO: Might have issues when waiting for shuttle to return to default pos
@@ -261,6 +265,7 @@ class Carpark:
         car is unable to exit, resulting in a dead lock.
         Solution: Reserve a lift first and then shuttle?
         """
+        # Log waiting time - START
         time_start = self.env.now
 
         cur_level_layout = self.layout[vehicle.parking_lot[0] + 1]
@@ -363,9 +368,12 @@ class Carpark:
         ground_floor_coord = findGroundLiftCoord(self.layout, lift)
         moveOutOfLift(vehicle, ground_floor_coord, drive_time_taken)
         yield self.env.timeout(drive_time_taken)
-        time_end = self.env.now
-        # waiting_time_retrieval[vehicle.id] = time_end - time_start
+        
         print("Car %d exits out of the carpark at %.2f" % (vehicle.id, self.env.now))
+        
+        # Log waiting time - END
+        time_end = self.env.now
+        self.stats_box.waiting_stats["retrieval"][vehicle.id - 1] = round(time_end - time_start, 2)
 
         # Put Lift back into store - lift will stay at whichever level it is at
         self.lifts_store.put(lift)

@@ -1,22 +1,14 @@
 import pygame
-import os
-from os import listdir
-from os.path import isfile, join
-from classes.vehicle import Vehicle
 
 from constants import *
 from animation.utils import get_background
 from animation.init import FloorLayout
 
-import simpy
 from simulation.init import sim_init
 from simulation.utils import vehicle_arrival, set_stat_time
 import numpy as np
 
-import sys
-
 from core import PyGameEnvironment, FrameRenderer
-from vehicle import Vehicle
 from animation.stats import StatsBox
 
 np.random.seed(seed=RANDOM_SEEDS)
@@ -35,7 +27,7 @@ env = PyGameEnvironment(renderer, factor=FACTOR, fps=FPS, strict=False)
 floor_no = NUM_OF_LEVELS
 carpark_layout = {}
 for i in range(0, NUM_OF_LEVELS):
-    floor_group = FloorLayout(level_number=floor_no, y_offset=i * 150 + STATS_HEIGHT)
+    floor_group = FloorLayout(level_number=floor_no, y_offset=i * 150 + 12)
     floor_group.create_floors_group()
     renderer.add(floor_group.floors_group)
     carpark_layout[floor_no] = floor_group.floors_group

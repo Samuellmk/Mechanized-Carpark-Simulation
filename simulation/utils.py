@@ -3,12 +3,11 @@ import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 import os
-import simpy
 from simpy.util import start_delayed
 import random
 from scipy.stats import poisson, expon
 from constants import *
-
+from os.path import join
 
 from classes.vehicle import Vehicle
 
@@ -38,23 +37,25 @@ def run(env, renderer, carpark):
 
 
 def vehicle_arrival(env, renderer, carpark, num_cars):
-    file_list = os.listdir(os.getcwd() + "\\assets\\Cars")
-    car_names = [os.path.splitext(file)[0] for file in file_list]
+    files_list = os.listdir(join("assets", "Cars"))
+    car_names = [os.path.splitext(file)[0] for file in files_list]
 
+    vehicle_placement = ((WIDTH // 2) - 24, 680) # 24 = half the width of vehicle sprite
     for car_id in range(1, num_cars + 1):
         car_name = random.choice(car_names)
-        vehicle = Vehicle(WIDTH // 2, 700, env, id=car_id, car_png=car_name)
+        vehicle = Vehicle(vehicle_placement[0], vehicle_placement[1], env, id=car_id, car_png=car_name)
         carpark.parking_queue.append(vehicle)
+        carpark.stats_box.stats["Cars Waiting"] += 1
 
         print(
             "Car %d arrived at the entrance of the carpark at %.2f." % (car_id, env.now)
         )
         env.process(run(env, renderer, carpark))
 
-        next_car = round(expon.rvs(scale=CAR_ARRIVAL_RATE), 2)
+        next_car = round(expon.rvs(scale=1/CAR_ARRIVAL_RATE), 2)
         print(
-            "Next Car %d arrived at the entrance of the carpark at %.2f."
-            % (car_id + 1, env.now + next_car)
+            "Next Car %d arrived at the entrance of the carpark at %.2f (+%.2f)."
+            % (car_id + 1, env.now + next_car, next_car)
         )
         yield env.timeout(next_car)
 
@@ -65,7 +66,7 @@ def print_stats(env, carpark):
         "%d out of %d carpark lots remaining"
         % (
             carpark.get_remaining_parking_lots(),
-            c.NUM_OF_PARKING_PER_LEVEL * c.NUM_OF_LEVELS,
+            NUM_OF_PARKING_PER_LEVEL * NUM_OF_LEVELS,
         )
     )
 

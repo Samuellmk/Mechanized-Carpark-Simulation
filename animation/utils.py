@@ -93,16 +93,16 @@ def findShuttle(level_layout, shuttle):
             return sprite
 
 
-def moveToGroundLift(vehicle, dest_coord, time_duration):
+def moveIntoGroundLift(vehicle, dest_coord, time_duration):
     dest_x, dest_y = dest_coord
     destination = Vector2(dest_x + vehicle.rect.width / 2, dest_y)
-    vehicle.pos = Vector2(destination[0], destination[1] + 40)  # Spawn and put below
+    vehicle.pos = Vector2(destination[0], destination[1] + LIFT_IN_OUT_PX)  # Spawn and put below
     velo = Vector2(0, (dest_y - vehicle.pos[1]) / (time_duration * FRAME_RATE))
     moveVehicle(vehicle, velo, destination)
 
 
 def moveOutOfLift(vehicle, dest_coord, time_duration):
-    dest_x, dest_y = (dest_coord[0], dest_coord[1] + 40)  # move out of lift
+    dest_x, dest_y = (dest_coord[0], dest_coord[1] + LIFT_IN_OUT_PX)  # move out of lift
     destination = Vector2(dest_x + vehicle.rect.width / 2, dest_y)
     velo = Vector2(0, (dest_y - vehicle.pos[1]) / (time_duration * FRAME_RATE))
     moveVehicle(vehicle, velo, destination)
