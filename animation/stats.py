@@ -74,17 +74,19 @@ class StatsBox:
 
     def change_color(self, key, value):
         default_color = (255, 255, 255)
+        red = (255, 46, 46)
+        amber = (255, 191, 0)
         if key == "Avg. Parking Waiting Time" or key == "Avg. Retrieval Waiting Time":
             if value >= 5.0:
-                default_color = (255, 46, 46)
+                default_color = red
             elif value >= 2.0:
-                default_color = (255, 191, 0)
+                default_color = amber
 
         elif key == "Cars Waiting":
             if value >= 10:
-                default_color = (255, 46, 46)
+                default_color = red
             elif value >= 5:
-                default_color = (255, 191, 0)
+                default_color = amber
 
         return default_color
 
