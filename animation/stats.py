@@ -76,13 +76,13 @@ class StatsBox:
         default_color = (255, 255, 255)
         if key == "Avg. Parking Waiting Time" or key == "Avg. Retrieval Waiting Time":
             if value >= 5.0:
-                default_color = (255, 0, 0)
+                default_color = (255, 46, 46)
             elif value >= 2.0:
                 default_color = (255, 191, 0)
 
         elif key == "Cars Waiting":
             if value >= 10:
-                default_color = (255, 0, 0)
+                default_color = (255, 46, 46)
             elif value >= 5:
                 default_color = (255, 191, 0)
 
