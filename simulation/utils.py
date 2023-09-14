@@ -5,7 +5,7 @@ import pandas as pd
 import os
 from simpy.util import start_delayed
 import random
-from scipy.stats import poisson, expon
+from scipy.stats import weibull_min, expon
 from constants import *
 from os.path import join
 
@@ -13,6 +13,9 @@ from classes.vehicle import Vehicle
 
 
 def run(env, renderer, carpark):
+    # Log waiting time - START
+    time_start = env.now
+
     parking_lot_request = carpark.total_parking_lot_resources.request()
     yield parking_lot_request
     vehicle = carpark.parking_queue.pop(0)
@@ -20,30 +23,39 @@ def run(env, renderer, carpark):
     renderer.add(vehicle)
     yield env.process(carpark.park(vehicle))
 
-    retrieval_time = expon.rvs(scale=RETRIEVAL_TIME)
+    # Log waiting time - END
+    time_end = env.now
+    carpark.stats_box.waiting_stats["parking"][vehicle.id - 1] = round(
+        time_end - time_start, 2
+    )
+
+    duration = weibull_min.rvs(c=CAR_DURATION_K, scale=CAR_DURATION_LAMBDA) * 60
     print(
         "Car %d will be retrieved from parking lot %d at %.2f (+%.2f)"
         % (
             vehicle.id,
             vehicle.parking_lot[1],
-            env.now + retrieval_time,
-            retrieval_time,
+            env.now + duration,
+            duration,
         )
     )
     # Wait for the retrieval time
-    yield start_delayed(
-        env, carpark.exit(vehicle, parking_lot_request), delay=retrieval_time
-    )
+    yield start_delayed(env, carpark.exit(vehicle, parking_lot_request), delay=duration)
 
 
 def vehicle_arrival(env, renderer, carpark, num_cars):
     files_list = os.listdir(join("assets", "Cars"))
     car_names = [os.path.splitext(file)[0] for file in files_list]
 
-    vehicle_placement = ((WIDTH // 2) - 24, 680) # 24 = half the width of vehicle sprite
+    vehicle_placement = (
+        (WIDTH - 50),
+        HEIGHT - 2 * STATS_HEIGHT - 5,
+    )  # 24 = half the width of vehicle sprite
     for car_id in range(1, num_cars + 1):
         car_name = random.choice(car_names)
-        vehicle = Vehicle(vehicle_placement[0], vehicle_placement[1], env, id=car_id, car_png=car_name)
+        vehicle = Vehicle(
+            vehicle_placement[0], vehicle_placement[1], env, id=car_id, car_png=car_name
+        )
         carpark.parking_queue.append(vehicle)
         carpark.stats_box.stats["Cars Waiting"] += 1
 
@@ -52,7 +64,7 @@ def vehicle_arrival(env, renderer, carpark, num_cars):
         )
         env.process(run(env, renderer, carpark))
 
-        next_car = round(expon.rvs(scale=1/CAR_ARRIVAL_RATE), 2)
+        next_car = round(expon.rvs(scale=1 / CAR_ARRIVAL_RATE), 2)
         print(
             "Next Car %d arrived at the entrance of the carpark at %.2f (+%.2f)."
             % (car_id + 1, env.now + next_car, next_car)

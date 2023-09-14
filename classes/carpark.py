@@ -123,7 +123,7 @@ class Carpark:
 
             if floor_level is not None:
                 break
-    
+
         # Request for shuttle
         # self.check_shuttle_usage(avail_shuttle_level)
         shuttle = yield self.shuttles_stores[floor_level].get()
@@ -138,9 +138,6 @@ class Carpark:
             )
 
     def park(self, vehicle):
-        # Log waiting time - START
-        time_start = self.env.now
-        
         # To which level? Check based on shuttle and available level
         avail_shuttle_level, shuttle = yield self.env.process(
             self.get_shuttle_level_availability()
@@ -157,7 +154,7 @@ class Carpark:
                 self.env, self.layout, lift, 0, lift_time_taken_to_ground, has_car=False
             )
         )
-        
+
         self.stats_box.stats["Cars Waiting"] -= 1
 
         # Driver Driving into the lift delay
@@ -243,10 +240,6 @@ class Carpark:
             "Car %d parked at parking lot %d at %.2f"
             % (vehicle.id, parking_lot_num, self.env.now)
         )
-        
-        # Log waiting time - END
-        time_end = self.env.now
-        self.stats_box.waiting_stats["parking"][vehicle.id - 1] = round(time_end - time_start, 2)
 
         # Move shuttle back to default position and move back shuttle to default pos
         # TODO: Might have issues when waiting for shuttle to return to default pos
@@ -368,12 +361,14 @@ class Carpark:
         ground_floor_coord = findGroundLiftCoord(self.layout, lift)
         moveOutOfLift(vehicle, ground_floor_coord, drive_time_taken)
         yield self.env.timeout(drive_time_taken)
-        
+
         print("Car %d exits out of the carpark at %.2f" % (vehicle.id, self.env.now))
-        
+
         # Log waiting time - END
         time_end = self.env.now
-        self.stats_box.waiting_stats["retrieval"][vehicle.id - 1] = round(time_end - time_start, 2)
+        self.stats_box.waiting_stats["retrieval"][vehicle.id - 1] = round(
+            time_end - time_start, 2
+        )
 
         # Put Lift back into store - lift will stay at whichever level it is at
         self.lifts_store.put(lift)

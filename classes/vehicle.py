@@ -40,10 +40,10 @@ class Vehicle(pygame.sprite.Sprite):
     def update_sprite(self):
         sprite_sheet_name = self.car_png_name + "_" + self.direction
         self.sprite = self.SPRITES[sprite_sheet_name][0]
-        self.update()
+        # self.update()
 
-    def update(self):
-        self.rect = self.sprite.get_rect(topleft=(self.rect.x, self.rect.y))
+    # def update(self):
+    #     self.rect = self.sprite.get_rect(topleft=(self.rect.x, self.rect.y))
 
     def __call__(self, win):
         self.update_sprite()
@@ -74,7 +74,6 @@ class Vehicle(pygame.sprite.Sprite):
                 self.kill()
 
     def rotate(self):
-        print(abs(self.final_ori - self.orientation) <= TOLERANCE)
         if (
             abs(self.final_ori - self.orientation) <= TOLERANCE
             and self.rotation_speed != 0
@@ -88,7 +87,7 @@ class Vehicle(pygame.sprite.Sprite):
         self.orientation %= 360
 
         for direction, angle in DIRECTION_MAP.items():
-            if abs(self.orientation - angle) < TOLERANCE:
+            if abs(self.orientation - angle) < 90:
                 self.direction = direction
                 break
 

@@ -36,6 +36,7 @@ requests==2.31.0
 rsa==4.9
 schedule==1.2.0
 scipy==1.10.1
+seaborn==0.12.2
 simpy==4.0.2
 six==1.16.0
 tenacity==8.2.3

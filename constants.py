@@ -3,7 +3,7 @@ WIDTH_PER_CAR = 2.4
 LENGTH_PER_CAR = 5.4
 HEIGHT_PER_CAR = 1.55
 HEIGHT_PER_LEVEL = 2.2 + 0.3  # Allowance of ceiling lights
-NUM_OF_LEVELS = 4  # 5
+NUM_OF_LEVELS = 5
 TOTAL_NUM_OF_PARKING = 195
 NUM_OF_PARKING_PER_LEVEL = 39
 NUM_OF_LIFTS = 4
@@ -14,15 +14,18 @@ PALLET_SPEED = 45  # m/min
 ROTARY = 3.5  # rpm
 # LIFT_ACC no data
 LIFT_SPEED = 65  # m/min
+
+# All the distribution stats for
 DRIVE_IN_OUT = (
     1 / 6,
     0.51,
 )  # 10-30 seconds for driver to start/stop engine and get out
-RETRIEVAL_TIME = 60
+CAR_DURATION_K = 1.359
+CAR_DURATION_LAMBDA = 3.68
 
 RANDOM_SEEDS = 12345
-CAR_ARRIVAL_RATE = 2  # rate/min
-MAX_CAR = 200
+CAR_ARRIVAL_RATE = 2  # TODO: NEED TO CHANGE THIS
+MAX_CAR = 500
 
 DEFAULT_LIFT_STATE = 0  # index start from 0
 
@@ -30,7 +33,7 @@ DEFAULT_LIFT_STATE = 0  # index start from 0
 LIFTS = [9, 12, 15, 18]
 
 # animation
-WIDTH, HEIGHT = 1000, 800
+WIDTH, HEIGHT = 1000, 900
 GRID_WIDTH, GRID_HEIGHT = 32, 48
 TOTAL_WIDTH = 26 * GRID_WIDTH + 4  # Border
 STATS_HEIGHT = 32 * 2
@@ -42,3 +45,5 @@ FACTOR = 0.47  # ~128x fast forward
 # FACTOR = 7.5
 FPS = 60
 TOLERANCE = 60 // FACTOR * 1.2
+
+ACTUAL_START_TIME = 0.0
