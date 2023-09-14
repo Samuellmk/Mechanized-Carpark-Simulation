@@ -74,7 +74,11 @@ class Vehicle(pygame.sprite.Sprite):
                 self.kill()
 
     def rotate(self):
-        if abs(self.final_ori - self.orientation) <= TOLERANCE:
+        print(abs(self.final_ori - self.orientation) <= TOLERANCE)
+        if (
+            abs(self.final_ori - self.orientation) <= TOLERANCE
+            and self.rotation_speed != 0
+        ):
             self.rotation_speed = 0
             self.orientation = self.final_ori
             self.direction = get_key_by_value(

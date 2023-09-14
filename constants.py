@@ -22,7 +22,7 @@ RETRIEVAL_TIME = 60
 
 RANDOM_SEEDS = 12345
 CAR_ARRIVAL_RATE = 2  # rate/min
-MAX_CAR = 160
+MAX_CAR = 200
 
 DEFAULT_LIFT_STATE = 0  # index start from 0
 
@@ -36,9 +36,9 @@ TOTAL_WIDTH = 26 * GRID_WIDTH + 4  # Border
 STATS_HEIGHT = 32 * 2
 LIFT_IN_OUT_PX = 50
 
-FACTOR = 0.47 # ~128x fast forward
-FACTOR = 0.9  # ~64x fast forward
+FACTOR = 0.47  # ~128x fast forward
+# FACTOR = 0.9  # ~64x fast forward
 # FACTOR = 1.875  # 32x fast forward
 # FACTOR = 7.5
 FPS = 60
-TOLERANCE = 60 // FACTOR * 1.1
+TOLERANCE = 60 // FACTOR * 1.2
