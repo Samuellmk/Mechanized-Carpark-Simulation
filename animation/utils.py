@@ -164,7 +164,7 @@ def moveLift(env, layout, lift, dest, time_duration, has_car, vehicle=None):
     lifts_dict = findAllLifts(layout, lift)
 
     if no_of_levels == 0:
-        sprite = lifts_dict[dest + 1]
+        # sprite = lifts_dict[dest + 1]
         return
 
     each_level_time = time_duration / abs(no_of_levels)
@@ -190,6 +190,4 @@ def moveLift(env, layout, lift, dest, time_duration, has_car, vehicle=None):
 def findGroundLiftCoord(layout, lift):
     lifts_dict = findAllLifts(layout, lift)
     ground_lift_sprite = lifts_dict[1]
-    sprite_x = ground_lift_sprite.rect.topleft[0]
-    sprite_y = ground_lift_sprite.rect.topleft[1]
     return ground_lift_sprite.rect.topleft

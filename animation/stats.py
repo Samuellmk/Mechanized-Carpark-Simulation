@@ -6,9 +6,15 @@ import numpy as np
 
 class StatsBox:
     def __init__(self):
+        # TODO: Utilization stats
+        self.utilization_stats = {
+            "lift": [0] * NUM_OF_LIFTS,
+            "shuttle": [0] * NUM_OF_LEVELS,
+        }
+        
         self.waiting_stats = {
-            "parking": [0] * MAX_CAR,
-            "retrieval": [0] * MAX_CAR,
+            "parking": {},
+            "retrieval": {},
         }
         self.stats = {
             "Total Car Served": 0,
@@ -52,12 +58,15 @@ class StatsBox:
         return background_surface
 
     def calculate_waiting_time(self):
-        self.stats["Avg. Parking Waiting Time"] = round(
-            np.mean(self.waiting_stats["parking"]), 3
-        )
-        self.stats["Avg. Retrieval Waiting Time"] = round(
-            np.mean(self.waiting_stats["retrieval"]), 3
-        )
+        if self.waiting_stats["parking"]: 
+            parking = list(self.waiting_stats["parking"].values())
+            retrieval_list = list(self.waiting_stats["retrieval"].values())
+            self.stats["Avg. Parking Waiting Time"] = round(
+                np.mean(parking), 3
+            )
+            self.stats["Avg. Retrieval Waiting Time"] = round(
+                np.mean(retrieval_list), 3
+            )
 
     def calculate_actual_time(self):
         # Calculate hours

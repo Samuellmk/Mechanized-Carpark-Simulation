@@ -366,7 +366,7 @@ class Carpark:
 
         # Log waiting time - END
         time_end = self.env.now
-        self.stats_box.waiting_stats["retrieval"][vehicle.id - 1] = round(
+        self.stats_box.waiting_stats["retrieval"][vehicle.id] = round(
             time_end - time_start, 2
         )
 

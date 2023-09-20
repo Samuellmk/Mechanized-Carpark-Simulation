@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 import os
@@ -11,9 +10,22 @@ from os.path import join
 
 from classes.vehicle import Vehicle
 
+def process_car_arrival_csv():
+    df = pd.read_csv(join("data", "morning.csv"))
+    return df["car_arrival_rate"].astype(int).tolist()
 
-def run(env, renderer, carpark):
+def generate_times(car_arrival):
+    total_of_times = []
+    end_range = 100
+    for _ in range(car_arrival):
+        time = random.randint(0, end_range)
+        total_of_times.append(time / 100)
+        end_range -= time
+    return total_of_times
+
+def run(env, renderer, carpark, delay):
     # Log waiting time - START
+    yield env.timeout(delay)
     time_start = env.now
 
     parking_lot_request = carpark.total_parking_lot_resources.request()
@@ -25,11 +37,12 @@ def run(env, renderer, carpark):
 
     # Log waiting time - END
     time_end = env.now
-    carpark.stats_box.waiting_stats["parking"][vehicle.id - 1] = round(
+    carpark.stats_box.waiting_stats["parking"][vehicle.id] = round(
         time_end - time_start, 2
     )
-
-    duration = weibull_min.rvs(c=CAR_DURATION_K, scale=CAR_DURATION_LAMBDA) * 60
+    
+    # duration = weibull_min.rvs(c=CAR_DURATION_K, scale=CAR_DURATION_LAMBDA) * 60
+    duration = 5
     print(
         "Car %d will be retrieved from parking lot %d at %.2f (+%.2f)"
         % (
@@ -43,61 +56,58 @@ def run(env, renderer, carpark):
     yield start_delayed(env, carpark.exit(vehicle, parking_lot_request), delay=duration)
 
 
-def vehicle_arrival(env, renderer, carpark, num_cars):
+def vehicle_arrival(env, renderer, carpark):
     files_list = os.listdir(join("assets", "Cars"))
     car_names = [os.path.splitext(file)[0] for file in files_list]
-
     vehicle_placement = (
         (WIDTH - 50),
         HEIGHT - 2 * STATS_HEIGHT - 5,
     )  # 24 = half the width of vehicle sprite
-    for car_id in range(1, num_cars + 1):
-        car_name = random.choice(car_names)
-        vehicle = Vehicle(
-            vehicle_placement[0], vehicle_placement[1], env, id=car_id, car_png=car_name
-        )
-        carpark.parking_queue.append(vehicle)
-        carpark.stats_box.stats["Cars Waiting"] += 1
+    
+    car_arrival_list = process_car_arrival_csv()    
+    car_id = 1
+    
+    for idx, car_arrival in enumerate(car_arrival_list):
+        random_times_list = generate_times(car_arrival)
 
-        print(
-            "Car %d arrived at the entrance of the carpark at %.2f." % (car_id, env.now)
-        )
-        env.process(run(env, renderer, carpark))
+        if car_arrival != 0:
+            for random_time in random_times_list:
+                print(env.now, random_time)
+                
+                car_name = random.choice(car_names)
+                vehicle = Vehicle(
+                    vehicle_placement[0], vehicle_placement[1], env, id=car_id, car_png=car_name
+                )
+                carpark.parking_queue.append(vehicle)
+                carpark.stats_box.stats["Cars Waiting"] += 1
 
-        next_car = round(expon.rvs(scale=1 / CAR_ARRIVAL_RATE), 2)
-        print(
-            "Next Car %d arrived at the entrance of the carpark at %.2f (+%.2f)."
-            % (car_id + 1, env.now + next_car, next_car)
-        )
-        yield env.timeout(next_car)
+                print(
+                    "Car %d arrived at the entrance of the carpark at %.2f." % (car_id, env.now)
+                )
+                env.process(run(env, renderer, carpark, random_time))
+                
+                car_id += 1
+        
+        yield env.timeout(1)
+        
+    print("Done")
 
 
-def print_stats(env, carpark):
+def show_stats(carpark):
     print("=============STATISTICS=============")
-    print(
-        "%d out of %d carpark lots remaining"
-        % (
-            carpark.get_remaining_parking_lots(),
-            NUM_OF_PARKING_PER_LEVEL * NUM_OF_LEVELS,
-        )
-    )
-
-    cars_queued_num = len(carpark.get_parking_queue())
-    cars_queued = ", ".join(str(car_id) for car_id in carpark.get_parking_queue())
-
-    print("%d cars waiting for carpark lots %s " % (cars_queued_num, cars_queued))
-
-    # plot_waiting_time_retrieval(waiting_time_retrieval)
+    parking_dict = carpark.stats_box.waiting_stats["parking"]
+    retrieval_dict = carpark.stats_box.waiting_stats["retrieval"]
+    plot_waiting_time_retrieval(parking_dict)
+    #plot_waiting_time_retrieval(retrieval_dict)
 
 
-def plot_waiting_time_retrieval(waiting_times):
+def plot_waiting_time_retrieval(wait_dict):
     # Extract data from the waiting_times dictionary
-    labels = list(waiting_times.keys())
-    times = list(waiting_times.values())
+    labels = list(wait_dict.keys())
+    times = list(wait_dict.values())
 
     mean_waiting_time = np.mean(times)
-    print("mean of waiting_time for car retrieval: %.2f" % mean_waiting_time)
-
+    print("Mean of waiting_time for car retrieval: %.2f" % mean_waiting_time)
     # Plot the data as a bar chart
     plt.figure(figsize=(10, 6))
     plt.bar(labels, times, color="green")

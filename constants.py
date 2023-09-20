@@ -18,14 +18,12 @@ LIFT_SPEED = 65  # m/min
 # All the distribution stats for
 DRIVE_IN_OUT = (
     1 / 6,
-    0.51,
+    0.5,
 )  # 10-30 seconds for driver to start/stop engine and get out
 CAR_DURATION_K = 1.359
-CAR_DURATION_LAMBDA = 3.68
+CAR_DURATION_LAMBDA = 1 # 3.68
 
 RANDOM_SEEDS = 12345
-CAR_ARRIVAL_RATE = 2  # TODO: NEED TO CHANGE THIS
-MAX_CAR = 500
 
 DEFAULT_LIFT_STATE = 0  # index start from 0
 
@@ -42,7 +40,8 @@ LIFT_IN_OUT_PX = 50
 FACTOR = 0.47  # ~128x fast forward
 # FACTOR = 0.9  # ~64x fast forward
 # FACTOR = 1.875  # 32x fast forward
-# FACTOR = 7.5
+# FACTOR = 3.75 # 16x fast forward
+#FACTOR = 7.5
 FPS = 60
 TOLERANCE = 60 // FACTOR * 1.2
 
