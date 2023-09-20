@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import matplotlib.ticker as plticker
 import numpy as np
 import pandas as pd
 import os
@@ -7,6 +8,7 @@ import random
 from scipy.stats import weibull_min, expon
 from constants import *
 from os.path import join
+import seaborn as sns
 
 from classes.vehicle import Vehicle
 
@@ -41,8 +43,8 @@ def run(env, renderer, carpark, delay):
         time_end - time_start, 2
     )
     
-    # duration = weibull_min.rvs(c=CAR_DURATION_K, scale=CAR_DURATION_LAMBDA) * 60
-    duration = 5
+    duration = weibull_min.rvs(c=CAR_DURATION_K, scale=CAR_DURATION_LAMBDA) * 60
+    
     print(
         "Car %d will be retrieved from parking lot %d at %.2f (+%.2f)"
         % (
@@ -97,28 +99,33 @@ def show_stats(carpark):
     print("=============STATISTICS=============")
     parking_dict = carpark.stats_box.waiting_stats["parking"]
     retrieval_dict = carpark.stats_box.waiting_stats["retrieval"]
-    plot_waiting_time_retrieval(parking_dict)
-    #plot_waiting_time_retrieval(retrieval_dict)
+    
+    sns.set(style="whitegrid")
+    fig, ax = plt.subplots(1, 2, figsize=(15, 6))
 
+    plot_waiting_time_retrieval(parking_dict, "Parking", ax[0])
+    plot_waiting_time_retrieval(retrieval_dict, "Retrieval", ax[1])
 
-def plot_waiting_time_retrieval(wait_dict):
+    plt.show()
+
+def plot_waiting_time_retrieval(wait_dict, title, ax):
     # Extract data from the waiting_times dictionary
     labels = list(wait_dict.keys())
     times = list(wait_dict.values())
 
     mean_waiting_time = np.mean(times)
-    print("Mean of waiting_time for car retrieval: %.2f" % mean_waiting_time)
+    print(f"Mean of waiting time for Car {title.lower()}: {mean_waiting_time:.2f}")
+    
     # Plot the data as a bar chart
-    plt.figure(figsize=(10, 6))
-    plt.bar(labels, times, color="green")
-    plt.xlabel("Car ID")
-    plt.ylabel("Waiting Time for Retrieval")
-    plt.title("Waiting Time for Retrieval of Cars")
-    plt.xticks(rotation=45)
+    sns.barplot(x=labels, y=times, ax=ax)
+    ax.set_xlabel("Car ID")
+    ax.set_ylabel(f"Waiting Time for {title}")
+    ax.set_title(f"Waiting Time for {title} of Cars")
+    loc = plticker.MultipleLocator(base=30.0)
+    ax.xaxis.set_major_locator(loc)
+    ax.set_xticklabels(ax.get_xticks(), rotation = 45)
+    
     plt.tight_layout()
-
-    # Show the plot
-    plt.show()
 
 
 # v_lot is wrt to x axis

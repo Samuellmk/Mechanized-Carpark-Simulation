@@ -21,7 +21,7 @@ DRIVE_IN_OUT = (
     0.5,
 )  # 10-30 seconds for driver to start/stop engine and get out
 CAR_DURATION_K = 1.359
-CAR_DURATION_LAMBDA = 1 # 3.68
+CAR_DURATION_LAMBDA = 3.68
 
 RANDOM_SEEDS = 12345
 
@@ -37,7 +37,8 @@ TOTAL_WIDTH = 26 * GRID_WIDTH + 4  # Border
 STATS_HEIGHT = 32 * 2
 LIFT_IN_OUT_PX = 50
 
-FACTOR = 0.47  # ~128x fast forward
+FACTOR = 0.23 # ~ 256x fast forward
+#FACTOR = 0.47  # ~128x fast forward
 # FACTOR = 0.9  # ~64x fast forward
 # FACTOR = 1.875  # 32x fast forward
 # FACTOR = 3.75 # 16x fast forward
