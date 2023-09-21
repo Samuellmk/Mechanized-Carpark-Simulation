@@ -22,10 +22,13 @@ DRIVE_IN_OUT = (
 )  # 10-30 seconds for driver to start/stop engine and get out
 CAR_DURATION_K = 1.359
 CAR_DURATION_LAMBDA = 3.68
+CAR_RATE = 1 / 120
 
 RANDOM_SEEDS = 12345
 
 DEFAULT_LIFT_STATE = 0  # index start from 0
+
+DATA_COLLECTION_INTERVAL = 5 #mins
 
 # coordinate
 LIFTS = [9, 12, 15, 18]

@@ -126,7 +126,6 @@ def moveShuttle(shuttle_sprite, time_duration, coord, lift=False):
 
 def moveVehicle(vehicle, velo, dest, direction="up"):
     dest_x, dest_y = dest
-    print("Dest:", dest)
     vehicle.destination = Vector2(dest_x, dest_y)
     vehicle.direction = direction
     vehicle.velo = Vector2(velo)

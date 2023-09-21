@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
-import matplotlib.ticker as plticker
+import matplotlib.ticker as mtick
+from matplotlib.gridspec import GridSpec
 import numpy as np
 import pandas as pd
 import os
@@ -43,7 +44,8 @@ def run(env, renderer, carpark, delay):
         time_end - time_start, 2
     )
     
-    duration = weibull_min.rvs(c=CAR_DURATION_K, scale=CAR_DURATION_LAMBDA) * 60
+    #duration = weibull_min.rvs(c=CAR_DURATION_K, scale=CAR_DURATION_LAMBDA) * 60
+    duration = expon.rvs(scale=1/CAR_RATE)
     
     print(
         "Car %d will be retrieved from parking lot %d at %.2f (+%.2f)"
@@ -69,7 +71,7 @@ def vehicle_arrival(env, renderer, carpark):
     car_arrival_list = process_car_arrival_csv()    
     car_id = 1
     
-    for idx, car_arrival in enumerate(car_arrival_list):
+    for car_arrival in car_arrival_list:
         random_times_list = generate_times(car_arrival)
 
         if car_arrival != 0:
@@ -91,24 +93,29 @@ def vehicle_arrival(env, renderer, carpark):
                 car_id += 1
         
         yield env.timeout(1)
-        
-    print("Done")
 
 
 def show_stats(carpark):
     print("=============STATISTICS=============")
     parking_dict = carpark.stats_box.waiting_stats["parking"]
     retrieval_dict = carpark.stats_box.waiting_stats["retrieval"]
+    floors_occupancy = carpark.stats_box.utilization_stats["floors"]
     
     sns.set(style="whitegrid")
-    fig, ax = plt.subplots(1, 2, figsize=(15, 6))
+    fig=plt.figure(figsize=(16,8))
+    gs=GridSpec(2,2) # 2 rows, 4 columns
 
-    plot_waiting_time_retrieval(parking_dict, "Parking", ax[0])
-    plot_waiting_time_retrieval(retrieval_dict, "Retrieval", ax[1])
+    ax1=fig.add_subplot(gs[0,0]) # First row, first column
+    ax2=fig.add_subplot(gs[0,1]) # First row, second column
+    ax3=fig.add_subplot(gs[1,:]) # Second row, span column
+    
+    plot_waiting_time(parking_dict, "Parking", ax1)
+    plot_waiting_time(retrieval_dict, "Retrieval", ax2)
+    plot_floors_trend(floors_occupancy, "Level", ax3)
 
     plt.show()
 
-def plot_waiting_time_retrieval(wait_dict, title, ax):
+def plot_waiting_time(wait_dict, title, ax):
     # Extract data from the waiting_times dictionary
     labels = list(wait_dict.keys())
     times = list(wait_dict.values())
@@ -117,15 +124,28 @@ def plot_waiting_time_retrieval(wait_dict, title, ax):
     print(f"Mean of waiting time for Car {title.lower()}: {mean_waiting_time:.2f}")
     
     # Plot the data as a bar chart
-    sns.barplot(x=labels, y=times, ax=ax)
+    sns.barplot(x=labels, y=times, palette=sns.color_palette("RdBu", n_colors=7), lw=0., ax=ax)
     ax.set_xlabel("Car ID")
     ax.set_ylabel(f"Waiting Time for {title}")
     ax.set_title(f"Waiting Time for {title} of Cars")
-    loc = plticker.MultipleLocator(base=30.0)
-    ax.xaxis.set_major_locator(loc)
+    ax.set_xticks(np.arange(0, len(labels)+1, 30))
     ax.set_xticklabels(ax.get_xticks(), rotation = 45)
     
     plt.tight_layout()
+    
+def plot_floors_trend(floors, title, ax):
+    times= np.arange(0, len(floors[0]) * 5, 5)
+    
+    for idx,floor in enumerate(floors):
+        label = f"Floor {idx+1}"
+        sns.lineplot(x=times, y=floor, ax=ax, label=label)
+        
+    ax.yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
+    ax.set_xlabel("Time (Interval of 5 mins)")
+    ax.set_ylabel(f"Parking Occupancy/Level")
+    ax.set_title(f"{title} {idx+1}")
+    ax.set_xticklabels(ax.get_xticks(), rotation = 45)
+    ax.legend()
 
 
 # v_lot is wrt to x axis
@@ -201,3 +221,13 @@ def set_stat_time(env, stats_box):
     while True:
         stats_box.stats["Tick"] = round(env.now, 2)
         yield env.timeout(0.1)
+        
+def collect_floor(env, carpark):
+    floors = carpark.stats_box.utilization_stats["floors"]
+    
+    while True:
+        for lvl in range(NUM_OF_LEVELS):
+            cars_per_lvl = NUM_OF_PARKING_PER_LEVEL - carpark.available_parking_lots_per_level[lvl]
+            floors[lvl].append(cars_per_lvl / NUM_OF_PARKING_PER_LEVEL)
+            
+        yield env.timeout(DATA_COLLECTION_INTERVAL)

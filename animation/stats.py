@@ -8,8 +8,9 @@ class StatsBox:
     def __init__(self):
         # TODO: Utilization stats
         self.utilization_stats = {
-            "lift": [0] * NUM_OF_LIFTS,
-            "shuttle": [0] * NUM_OF_LEVELS,
+            "floors": [[] for _ in range(NUM_OF_LEVELS)],
+            "lift": [],
+            "shuttle": [],
         }
         
         self.waiting_stats = {

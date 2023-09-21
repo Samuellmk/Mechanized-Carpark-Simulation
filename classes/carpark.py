@@ -222,7 +222,7 @@ class Carpark:
         yield self.env.timeout(time_taken_to_parking["lift_pallet"])
 
         parking_coord = findCoord(cur_level_layout, parking_lot_num)
-        print("Parking: ", parking_coord)
+        #print("Parking: ", parking_coord)
         moveOriginToLot(
             vehicle,
             shuttle_sprite,
