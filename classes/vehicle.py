@@ -53,7 +53,7 @@ class Vehicle(pygame.sprite.Sprite):
         self.fading()
 
     def move(self):
-        # print("vehicle: ", self.pos, self.destination)
+        # print(f"{self.id}: Check => {self.pos}  {self.rect.topleft}  {self.destination}")
         distance = self.destination - self.pos
         if distance.length() < TOLERANCE and self.velo != 0:
             self.velo = Vector2(0, 0)

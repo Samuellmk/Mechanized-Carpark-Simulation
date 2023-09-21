@@ -126,6 +126,7 @@ def moveShuttle(shuttle_sprite, time_duration, coord, lift=False):
 
 def moveVehicle(vehicle, velo, dest, direction="up"):
     dest_x, dest_y = dest
+    print("Dest:", dest)
     vehicle.destination = Vector2(dest_x, dest_y)
     vehicle.direction = direction
     vehicle.velo = Vector2(velo)
@@ -155,7 +156,8 @@ def rotateVehicle(vehicle, time_duration, coord):
 def movePalletToLot(vehicle, time_duration, coord):
     dest_x, dest_y = coord
     y = (dest_y - vehicle.pos[1]) / (time_duration * FRAME_RATE)
-    moveVehicle(vehicle, (0, y), (vehicle.pos[0], dest_y))
+    x_offset = (vehicle.rect.width - GRID_WIDTH) / 2
+    moveVehicle(vehicle, (0, y), (dest_x - x_offset, dest_y))
 
 
 def moveLift(env, layout, lift, dest, time_duration, has_car, vehicle=None):

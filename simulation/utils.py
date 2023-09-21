@@ -74,7 +74,7 @@ def vehicle_arrival(env, renderer, carpark):
 
         if car_arrival != 0:
             for random_time in random_times_list:
-                print(env.now, random_time)
+                #print(env.now, random_time)
                 
                 car_name = random.choice(car_names)
                 vehicle = Vehicle(
