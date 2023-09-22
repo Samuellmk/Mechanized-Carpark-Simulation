@@ -1,8 +1,7 @@
 # import base64
 # import functions_framework
 import requests
-import json
-from datetime import datetime
+from datetime import datetime, date
 from google.cloud import storage
 import os
 import pytz
@@ -54,6 +53,10 @@ def get_carpark_occupancy():
 
     carpark = []
 
+    current_utc_time = datetime.now(pytz.utc)
+    singapore_timezone = pytz.timezone("Asia/Singapore")
+    singapore_time = current_utc_time.astimezone(singapore_timezone)
+
     for data in cp_data:
         if data["CarParkID"] in CARPARKS_IDS:
             idx = CARPARKS_IDS.index(data["CarParkID"])
@@ -63,9 +66,7 @@ def get_carpark_occupancy():
             remaining_lot = cp_max_lot - int(data["AvailableLots"])
 
             # Create a datetime object with the current time in UTC
-            current_utc_time = datetime.now(pytz.utc)
-            singapore_timezone = pytz.timezone("Asia/Singapore")
-            singapore_time = current_utc_time.astimezone(singapore_timezone)
+
             time_lot = singapore_time.strftime("%d-%m-%Y %H:%M:%S")
 
             carpark.append(
@@ -78,9 +79,11 @@ def get_carpark_occupancy():
             )
 
     field_names = list(carpark[0].keys())
+    today = singapore_time.strftime("%Y-%m-%d")
+    print(today)
 
     for mall in carpark:
-        file_name = "data/" + mall["name"] + ".csv"
+        file_name = f"data/{mall['name']}-{today}.csv"
         print("Writing to %s..." % file_name)
         write_csv_to_storage(file_name, mall, field_names)
 
