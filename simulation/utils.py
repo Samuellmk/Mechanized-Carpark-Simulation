@@ -10,8 +10,8 @@ from classes.vehicle import Vehicle
 
 
 def process_car_arrival_csv():
-    df = pd.read_csv(join("data", "morning.csv"))
-    return df["car_arrival_rate"].astype(int).tolist()
+    df = pd.read_csv(join("data", "slices", "6-14 Hours.csv"))
+    return df["car_arrival_rate"].tolist()
 
 
 def generate_times(car_arrival):

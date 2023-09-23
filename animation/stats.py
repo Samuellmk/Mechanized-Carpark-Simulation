@@ -167,7 +167,6 @@ class StatsBox:
         sns.barplot(
             x=labels,
             y=times,
-            palette=sns.color_palette("RdBu", n_colors=7),
             lw=0.0,
             ax=ax,
         )
