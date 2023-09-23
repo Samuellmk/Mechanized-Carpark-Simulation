@@ -124,7 +124,12 @@ class StatsBox:
         # Calculate the waiting time
         self.calculate_waiting_time()
 
-    def show_stats(self, carpark):
+    def set_stat_time(self, env, stats_box):
+        while True:
+            stats_box.stats["Tick"] = round(env.now, 2)
+            yield env.timeout(0.1)
+
+    def show_stats(self, carpark, instance_type):
         print("=============STATISTICS=============")
         parking_dict = self.waiting_stats["parking"]
         retrieval_dict = self.waiting_stats["retrieval"]
@@ -134,6 +139,7 @@ class StatsBox:
 
         sns.set(style="whitegrid")
         fig = plt.figure(figsize=(16, 8))
+        fig.canvas.manager.set_window_title(f"{instance_type} Policy")
         gs = GridSpec(3, 2)  # 3 rows, 2 columns
 
         ax1 = fig.add_subplot(gs[0, 0])  # First row, first column

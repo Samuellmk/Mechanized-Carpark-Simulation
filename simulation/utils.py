@@ -7,6 +7,7 @@ from constants import *
 from os.path import join
 
 from classes.vehicle import Vehicle
+from animation.popup import Popup
 
 
 def process_car_arrival_csv():
@@ -43,8 +44,9 @@ def run(env, renderer, carpark, delay):
     )
 
     # duration = weibull_min.rvs(c=CAR_DURATION_K, scale=CAR_DURATION_LAMBDA) * 60
-    duration = expon.rvs(scale=1 / CAR_RATE)
-
+    # duration = expon.rvs(scale=1 / CAR_RATE)
+    duration = 60.0
+    vehicle.popup.set_text("exiting time", round(env.now + duration, 2))
     print(
         "Car %d will be retrieved from parking lot %d at %.2f (+%.2f)"
         % (
@@ -76,6 +78,8 @@ def vehicle_arrival(env, renderer, carpark):
             for random_time in random_times_list:
                 # print(env.now, random_time)
 
+                popup = Popup(car_id)
+
                 car_name = random.choice(car_names)
                 vehicle = Vehicle(
                     vehicle_placement[0],
@@ -83,6 +87,7 @@ def vehicle_arrival(env, renderer, carpark):
                     env,
                     id=car_id,
                     car_png=car_name,
+                    popup=popup,
                 )
                 carpark.parking_queue.append(vehicle)
                 carpark.stats_box.stats["Cars Waiting"] += 1
@@ -167,12 +172,6 @@ def create_lifts_data(lifts_pos):
     return lifts
 
 
-def set_stat_time(env, stats_box):
-    while True:
-        stats_box.stats["Tick"] = round(env.now, 2)
-        yield env.timeout(0.1)
-
-
 def collect_floor(env, carpark):
     floors = carpark.stats_box.utilization_stats["floors"]
 
@@ -184,3 +183,15 @@ def collect_floor(env, carpark):
             floors[lvl].append(cars_per_lvl / NUM_OF_PARKING_PER_LEVEL)
 
         yield env.timeout(DATA_COLLECTION_INTERVAL)
+
+
+# def check_shuttle_lift(env, carpark):
+#     while True:
+#         for shuttle_store in carpark.shuttles_stores:
+#             print(shuttle_store.items)
+#         print("-------------")
+
+#         available_lifts = [lift.lift_num for lift in carpark.lifts_store.items]
+#         print(available_lifts)
+
+#         yield env.timeout(5)

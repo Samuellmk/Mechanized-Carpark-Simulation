@@ -1,7 +1,5 @@
-import sys
 import pygame
 from pygame.math import Vector2
-import simpy
 
 from animation.utils import load_sprite_sheets
 from constants import *
@@ -16,7 +14,7 @@ def get_key_by_value(dict, value):
 
 
 class Vehicle(pygame.sprite.Sprite):
-    def __init__(self, x, y, env, id, car_png):
+    def __init__(self, x, y, env, id, car_png, popup):
         super().__init__()
         self.car_png_name = car_png
         self.velo = Vector2(0, 0)
@@ -37,6 +35,8 @@ class Vehicle(pygame.sprite.Sprite):
 
         self.parking_lot = [None, None]  # (level, lot)
 
+        self.popup = popup
+
     def update_sprite(self):
         sprite_sheet_name = self.car_png_name + "_" + self.direction
         self.sprite = self.SPRITES[sprite_sheet_name][0]
@@ -51,6 +51,7 @@ class Vehicle(pygame.sprite.Sprite):
         self.move()
         self.rotate()
         self.fading()
+        self.popup.render(win)
 
     def move(self):
         # print(f"{self.id}: Check => {self.pos}  {self.rect.topleft}  {self.destination}")

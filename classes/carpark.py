@@ -15,6 +15,15 @@ from animation.utils import (
     findGroundLiftCoord,
 )
 
+"""
+Algorithm:
+[✓] 1. Nearest First - cars are stored nearest to the lift
+[ ] 2. Randomized spot - randomized car into slots of different levels
+[ ] 3. Balance levels - levels are balanced based on capacity of each level (Highest level takes the longest)
+[ ] 4. Cached Nearest First - first level is used for quick storing of vehicles 
+(Potential shuttle bottleneck when caching), sort to other levels when lifts are not busy
+"""
+
 
 class Carpark:
     def __init__(
@@ -42,6 +51,7 @@ class Carpark:
         self.layout = layout
         self.shuttle_available_event = env.event()
         self.stats_box = stats_box
+        self.policy = 0
 
     def get_shortest_avail_travel_lot(self, lift, level):
         available_lots = [
@@ -53,6 +63,13 @@ class Carpark:
         )
         # print(shortest_time_lot)
         return shortest_time_lot
+
+    def random_parking_lot(self, lift, level):
+        available_lots = [
+            lot for lot in lift.travel_times if lot not in self.parking_lots_sets[level]
+        ]
+        random_parking = random.choice(available_lots)
+        return random_parking
 
     def get_remaining_parking_lots(self):
         return (
@@ -112,7 +129,6 @@ class Carpark:
                 return idx
 
     def get_shuttle_level_availability(self):
-        # TODO: check if floor is full
         # check if which level shuttle is free
         # Possible deadlock when car wants to come out but lift is full
 
@@ -139,9 +155,25 @@ class Carpark:
 
     def park(self, vehicle):
         # To which level? Check based on shuttle and available level
-        avail_shuttle_level, shuttle = yield self.env.process(
-            self.get_shuttle_level_availability()
-        )  # index 0
+
+        if self.policy == "Nearest-First":
+            avail_shuttle_level, shuttle = yield self.env.process(
+                self.get_shuttle_level_availability()
+            )  # index 0
+
+        elif self.policy == "Randomised":
+            avail_shuttle_level = random.randint(0, NUM_OF_LEVELS - 1)
+            while self.available_parking_lots_per_level[avail_shuttle_level] <= 0:
+                avail_shuttle_level = random.randint(0, NUM_OF_LEVELS - 1)
+            self.available_parking_lots_per_level[avail_shuttle_level] -= 1
+
+            shuttle = yield self.shuttles_stores[avail_shuttle_level].get()
+
+            print(
+                "Level",
+                avail_shuttle_level,
+                self.available_parking_lots_per_level[avail_shuttle_level],
+            )
 
         # Wait for available lift
         self.check_lift_usage()
@@ -174,7 +206,7 @@ class Carpark:
 
         # Lift Travel Time to that level
         # TODO: Retrieving shuttle time while lift going up?
-        # print("LEVEL AVAILABLE: ", avail_shuttle_level)
+        print("LEVEL AVAILABLE: ", avail_shuttle_level)
         cur_level_layout = self.layout[avail_shuttle_level + 1]
         lift_coord = findCoord(cur_level_layout, lift)
 
@@ -208,8 +240,15 @@ class Carpark:
             % (avail_shuttle_level + 1, shuttle.shuttle_num, self.env.now)
         )
 
-        # Finding the shortest available travel lot
-        parking_lot_num = self.get_shortest_avail_travel_lot(lift, avail_shuttle_level)
+        # Policy 0: Finding the shortest available travel lot
+        # Policy 1: Finding the random spot based on floor
+        if self.policy == "Nearest-First":
+            parking_lot_num = self.get_shortest_avail_travel_lot(
+                lift, avail_shuttle_level
+            )
+        elif self.policy == "Randomised":
+            parking_lot_num = self.random_parking_lot(lift, avail_shuttle_level)
+
         # Parking is reserved for this car
         self.parking_lots_sets[avail_shuttle_level].add(parking_lot_num)
 
@@ -240,6 +279,7 @@ class Carpark:
         movePalletToLot(vehicle, time_taken_to_parking["pallet_lot"], parking_coord)
         yield self.env.timeout(time_taken_to_parking["pallet_lot"])
 
+        vehicle.popup.set_text("parked time", round(self.env.now, 2))
         print(
             "Car %d parked at parking lot %d at %.2f"
             % (vehicle.id, parking_lot_num, self.env.now)

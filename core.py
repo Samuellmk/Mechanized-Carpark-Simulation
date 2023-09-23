@@ -1,5 +1,6 @@
 import pygame
 from simpy.rt import RealtimeEnvironment
+from classes.vehicle import Vehicle
 
 
 class PyGameEnvironment(RealtimeEnvironment):
@@ -55,14 +56,27 @@ class FrameRenderer(object):
         self._background = background
         self._bg_image = bg_image
 
+    def check_mouse(self, sprite):
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEMOTION:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                if sprite.rect.collidepoint(mouse_x, mouse_y):
+                    sprite.popup.show((mouse_x, mouse_y))
+                else:
+                    sprite.popup.hide()
+
     def render(self):
         """
         Fills the screen with *fill_color*, then calls all draw functions, then
         updates the screen with ``pygame.display.flip``.
         """
+
         for tile in self._background:
             self._screen.blit(self._bg_image, tile)
         for draw in self._callbacks:
+            if isinstance(draw, Vehicle):
+                self.check_mouse(draw)
+
             if isinstance(draw, pygame.sprite.Group):
                 for sprite in draw.sprites():
                     sprite(win=self._screen)
