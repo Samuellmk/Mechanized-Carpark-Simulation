@@ -5,7 +5,7 @@ from animation.utils import get_background
 from animation.init import FloorLayout
 
 from simulation.init import sim_init
-from simulation.utils import vehicle_arrival, set_stat_time, show_stats, collect_floor
+from simulation.utils import vehicle_arrival, set_stat_time, collect_floor
 import numpy as np
 
 from core import PyGameEnvironment, FrameRenderer
@@ -54,4 +54,4 @@ env.process(set_stat_time(env, stats_box))
 env.process(vehicle_arrival(env, renderer, carpark))
 
 env.run()
-show_stats(carpark)
+stats_box.show_stats(carpark)

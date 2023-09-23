@@ -164,6 +164,9 @@ class Carpark:
         moveIntoGroundLift(vehicle, ground_lift_coord, drive_time_taken)
         yield self.env.timeout(drive_time_taken)
 
+        # Track time of service - START
+        service_time_start = self.env.now
+
         print(
             "Car %d entered in lift bay and took lift %d at %.2f"
             % (vehicle.id, lift.lift_num, self.env.now)
@@ -222,7 +225,7 @@ class Carpark:
         yield self.env.timeout(time_taken_to_parking["lift_pallet"])
 
         parking_coord = findCoord(cur_level_layout, parking_lot_num)
-        #print("Parking: ", parking_coord)
+        # print("Parking: ", parking_coord)
         moveOriginToLot(
             vehicle,
             shuttle_sprite,
@@ -240,6 +243,12 @@ class Carpark:
         print(
             "Car %d parked at parking lot %d at %.2f"
             % (vehicle.id, parking_lot_num, self.env.now)
+        )
+
+        # Track time of service - END
+        service_time_end = self.env.now
+        self.stats_box.service_stats["parking"][vehicle.id] = round(
+            service_time_end - service_time_start, 2
         )
 
         # Move shuttle back to default position and move back shuttle to default pos
@@ -310,6 +319,9 @@ class Carpark:
         # Travelling time from parking lot to lift - concurrent for lift travel time?
         time_taken_to_lift = lift.travel_times.get(vehicle.parking_lot[1])
 
+        # Track time of service - START
+        service_time_start = self.env.now
+
         movePalletToLot(vehicle, time_taken_to_lift["pallet_lot"], shuttle_sprite.pos)
         yield self.env.timeout(time_taken_to_lift["pallet_lot"])
 
@@ -356,6 +368,12 @@ class Carpark:
         vehicle.parking_lot = (None, None)
         self.stats_box.stats["Cars Parked"] -= 1
         self.stats_box.stats["Cars Exited"] += 1
+
+        # Track time of service - END
+        service_time_end = self.env.now
+        self.stats_box.service_stats["retrieval"][vehicle.id] = round(
+            service_time_end - service_time_start, 2
+        )
 
         # Drove into the lift bay and driver drives out
         drive_time_taken = random.uniform(*DRIVE_IN_OUT)

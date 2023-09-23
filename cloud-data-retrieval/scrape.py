@@ -6,10 +6,10 @@ from google.cloud import storage
 import os
 import pytz
 
-# Suntec City, Raffles City, Plaza Singapura
-# 3100, 1051, 695
-CARPARK_MAX_LOTS = [3100, 1051, 695]
-CARPARKS_IDS = ["1", "3", "9"]
+# Raffles City, Plaza Singapura, Vivocity P3, ION Orchard, Funan
+# 1051, 695, 1388, 460, 390
+CARPARK_MAX_LOTS = [905, 695, 1388, 460, 390]
+CARPARKS_IDS = ["3", "9", "16", "23", "66"]
 
 WEBSITE = "http://datamall2.mytransport.sg/ltaodataservice/CarParkAvailabilityv2"
 
