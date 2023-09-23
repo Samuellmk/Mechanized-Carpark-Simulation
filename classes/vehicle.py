@@ -51,7 +51,6 @@ class Vehicle(pygame.sprite.Sprite):
         self.move()
         self.rotate()
         self.fading()
-        self.popup.render(win)
 
     def move(self):
         # print(f"{self.id}: Check => {self.pos}  {self.rect.topleft}  {self.destination}")

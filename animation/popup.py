@@ -2,8 +2,9 @@ import pygame
 
 
 # Define a class for the popup
-class Popup:
+class Popup(pygame.sprite.Sprite):
     def __init__(self, car_id):
+        super().__init__()
         self.font_size = 18
         self.font = pygame.font.Font(None, self.font_size)
         self.car_info = {

@@ -55,15 +55,21 @@ class FrameRenderer(object):
         self._callbacks = []
         self._background = background
         self._bg_image = bg_image
+        self.vehicle_group = pygame.sprite.Group()
 
-    def check_mouse(self, sprite):
-        for event in pygame.event.get():
-            if event.type == pygame.MOUSEMOTION:
-                mouse_x, mouse_y = pygame.mouse.get_pos()
-                if sprite.rect.collidepoint(mouse_x, mouse_y):
-                    sprite.popup.show((mouse_x, mouse_y))
-                else:
-                    sprite.popup.hide()
+    def check_mouse(self):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        mouse_rect = pygame.Rect(
+            mouse_x, mouse_y, 1, 1
+        )  # Create a small Rect at the mouse position
+
+        for vehicle in self.vehicle_group:
+            if vehicle.rect.colliderect(mouse_rect):
+                # If the vehicle collides with the mouse cursor
+                vehicle.popup.show((mouse_x, mouse_y))
+            else:
+                # If the vehicle doesn't collide with the mouse cursor
+                vehicle.popup.hide()
 
     def render(self):
         """
@@ -73,15 +79,22 @@ class FrameRenderer(object):
 
         for tile in self._background:
             self._screen.blit(self._bg_image, tile)
-        for draw in self._callbacks:
-            if isinstance(draw, Vehicle):
-                self.check_mouse(draw)
 
+        for draw in self._callbacks:
             if isinstance(draw, pygame.sprite.Group):
                 for sprite in draw.sprites():
                     sprite(win=self._screen)
             else:
                 draw(win=self._screen)
+
+        # Render all the vehicles before rendering all the popup
+        for vehicle in self.vehicle_group:
+            vehicle(win=self._screen)
+
+        for vehicle in self.vehicle_group:
+            vehicle.popup.render(self._screen)
+
+        self.check_mouse()
 
         pygame.display.flip()
 
@@ -89,4 +102,8 @@ class FrameRenderer(object):
         """
         add a draw function to be called on every frame
         """
-        self._callbacks.append(drawable)
+
+        if isinstance(drawable, Vehicle):
+            self.vehicle_group.add(drawable)
+        else:
+            self._callbacks.append(drawable)
