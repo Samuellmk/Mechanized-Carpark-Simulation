@@ -93,6 +93,6 @@ get_carpark_occupancy()
 # # Triggered from a message on a Cloud Pub/Sub topic.
 # @functions_framework.cloud_event
 # def hello_pubsub(cloud_event):
-#     # Print out the data from Pub/Sub, to prove that it worked
+#     # print out the data from Pub/Sub, to prove that it worked
 #     print("Pub/sub msg:", base64.b64decode(cloud_event.data["message"]["data"]))
 #     get_carpark_occupancy()

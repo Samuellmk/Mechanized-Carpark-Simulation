@@ -9,6 +9,8 @@ from os.path import join
 from classes.vehicle import Vehicle
 from animation.popup import Popup
 
+import logging
+
 
 def process_car_arrival_csv():
     df = pd.read_csv(join("data", "slices", "6-14 Hours.csv"))
@@ -25,7 +27,7 @@ def generate_times(car_arrival):
     return total_of_times
 
 
-def run(env, renderer, carpark, delay):
+def run(env, renderer, carpark, delay, logger):
     # Log waiting time - START
     yield env.timeout(delay)
     time_start = env.now
@@ -47,7 +49,7 @@ def run(env, renderer, carpark, delay):
     # duration = expon.rvs(scale=1 / CAR_RATE)
     duration = 60.0
     vehicle.popup.set_text("exiting time", round(env.now + duration, 2))
-    print(
+    logger.info(
         "Car %d will be retrieved from parking lot %d at %.2f (+%.2f)"
         % (
             vehicle.id,
@@ -57,10 +59,11 @@ def run(env, renderer, carpark, delay):
         )
     )
     # Wait for the retrieval time
+    # env.process(carpark.exit(vehicle, parking_lot_request, delay=duration))
     yield start_delayed(env, carpark.exit(vehicle, parking_lot_request), delay=duration)
 
 
-def vehicle_arrival(env, renderer, carpark):
+def vehicle_arrival(env, renderer, carpark, logger):
     files_list = os.listdir(join("assets", "Cars"))
     car_names = [os.path.splitext(file)[0] for file in files_list]
     vehicle_placement = (
@@ -76,7 +79,7 @@ def vehicle_arrival(env, renderer, carpark):
 
         if car_arrival != 0:
             for random_time in random_times_list:
-                # print(env.now, random_time)
+                # logger.info(env.now, random_time)
 
                 popup = Popup(car_id)
 
@@ -92,11 +95,11 @@ def vehicle_arrival(env, renderer, carpark):
                 carpark.parking_queue.append(vehicle)
                 carpark.stats_box.stats["Cars Waiting"] += 1
 
-                print(
+                logger.info(
                     "Car %d arrived at the entrance of the carpark at %.2f."
                     % (car_id, env.now)
                 )
-                env.process(run(env, renderer, carpark, random_time))
+                env.process(run(env, renderer, carpark, random_time, logger))
 
                 car_id += 1
 
@@ -125,9 +128,9 @@ def lift_wrt_lot(lift_pos, v_lot, a_lot, turning):
         "turning": 0,
     }
 
-    # print("--------------")
-    # print("%.2f time taken for lift to pallet" % time_taken_from_lift_to_pallet)
-    # print(
+    # logger.info("--------------")
+    # logger.info("%.2f time taken for lift to pallet" % time_taken_from_lift_to_pallet)
+    # logger.info(
     #     "%.2f time taken to travel %.2fm"
     #     % (
     #         time_taken_from_origin_to_lot,
@@ -136,8 +139,8 @@ def lift_wrt_lot(lift_pos, v_lot, a_lot, turning):
     # )
     if turning:
         time_takens["turning"] = time_taken_to_rotate
-        # print("%.2f time taken to rotate car" % time_taken_to_rotate)
-    # print("%.2f time taken for pallet to lot" % time_taken_from_pallet_to_lot)
+        # logger.info("%.2f time taken to rotate car" % time_taken_to_rotate)
+    # logger.info("%.2f time taken for pallet to lot" % time_taken_from_pallet_to_lot)
 
     total = 0
     for value in time_takens.values():
@@ -185,13 +188,26 @@ def collect_floor(env, carpark):
         yield env.timeout(DATA_COLLECTION_INTERVAL)
 
 
-# def check_shuttle_lift(env, carpark):
-#     while True:
-#         for shuttle_store in carpark.shuttles_stores:
-#             print(shuttle_store.items)
-#         print("-------------")
+def logging_setup():
+    # Create a logger
+    logger = logging.getLogger("my_logger")
+    logger.setLevel(logging.DEBUG)
 
-#         available_lifts = [lift.lift_num for lift in carpark.lifts_store.items]
-#         print(available_lifts)
+    # Create a formatter
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
 
-#         yield env.timeout(5)
+    # Create a handler for stdout (console)
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+
+    # Create a handler for a log file
+    file_handler = logging.FileHandler("my_log.log")
+    file_handler.setFormatter(formatter)
+
+    # Add both handlers to the logger
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+
+    return logger

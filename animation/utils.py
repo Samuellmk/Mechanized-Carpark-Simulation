@@ -73,7 +73,7 @@ def findCoord(level_layout, destObj):
         ):
             return sprite.rect.topleft
         elif isinstance(sprite, Parking_Floor) and sprite.id == destObj:
-            # print(sprite)
+            # logger.info(sprite)
             return sprite.rect.topleft
 
 
@@ -96,7 +96,9 @@ def findShuttle(level_layout, shuttle):
 def moveIntoGroundLift(vehicle, dest_coord, time_duration):
     dest_x, dest_y = dest_coord
     destination = Vector2(dest_x + vehicle.rect.width / 2, dest_y)
-    vehicle.pos = Vector2(destination[0], destination[1] + LIFT_IN_OUT_PX)  # Spawn and put below
+    vehicle.pos = Vector2(
+        destination[0], destination[1] + LIFT_IN_OUT_PX
+    )  # Spawn and put below
     velo = Vector2(0, (dest_y - vehicle.pos[1]) / (time_duration * FRAME_RATE))
     moveVehicle(vehicle, velo, destination)
 
@@ -119,7 +121,7 @@ def moveShuttle(shuttle_sprite, time_duration, coord, lift=False):
 
     sprite_x, sprite_y = shuttle_sprite.rect.x, shuttle_sprite.rect.y
     shuttle_sprite.destination = (dest_x, sprite_y)
-    # print("shuttle: ", sprite.pos, sprite.destination)
+    # logger.info("shuttle: ", sprite.pos, sprite.destination)
     x = (dest_x - sprite_x) / (time_duration * FRAME_RATE)
     shuttle_sprite.velo = Vector2(x, 0)
 
@@ -159,7 +161,9 @@ def movePalletToLot(vehicle, time_duration, coord):
     moveVehicle(vehicle, (0, y), (dest_x - x_offset, dest_y))
 
 
-def moveLift(env, layout, lift, dest, time_duration, has_car, vehicle=None):
+def moveLift(
+    env, layout, lift, dest, time_duration, has_car, vehicle=None, logger=None
+):
     # -ve = going down; +ve = going up; 0 = no change
     no_of_levels = dest - lift.lift_pos
     lifts_dict = findAllLifts(layout, lift)
@@ -177,7 +181,7 @@ def moveLift(env, layout, lift, dest, time_duration, has_car, vehicle=None):
             lift.lift_pos += 1
         no_of_levels = dest - lift.lift_pos
 
-        print("Lift %d is moving at %.2f" % (lift.lift_num, env.now))
+        logger.info("Lift %d is moving at %.2f" % (lift.lift_num, env.now))
         yield env.timeout(each_level_time)
 
         lifts_dict[old_pos].toggle_Occupancy()

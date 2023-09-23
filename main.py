@@ -5,7 +5,7 @@ from animation.utils import get_background
 from animation.init import FloorLayout
 
 from simulation.init import sim_init
-from simulation.utils import vehicle_arrival, collect_floor
+from simulation.utils import vehicle_arrival, collect_floor, logging_setup
 import numpy as np
 
 from core import PyGameEnvironment, FrameRenderer
@@ -16,6 +16,7 @@ import multiprocessing
 
 def simulation(instance_type):
     np.random.seed(seed=RANDOM_SEEDS)
+    logger = logging_setup()
 
     pygame.init()
     pygame.display.set_caption(f"Mechanised Carpark Simulation - {instance_type}")
@@ -38,17 +39,17 @@ def simulation(instance_type):
         floor_no -= 1
 
     # Stat Board
-    stats_box = StatsBox()
+    stats_box = StatsBox(logger)
     renderer.add(stats_box)
 
     # init carpark class
-    carpark = sim_init(env, carpark_layout, stats_box)
+    carpark = sim_init(env, carpark_layout, stats_box, logger)
     carpark.policy = instance_type
 
     # Car Arrival
     env.process(collect_floor(env, carpark))
     env.process(stats_box.set_stat_time(env, stats_box))
-    env.process(vehicle_arrival(env, renderer, carpark))
+    env.process(vehicle_arrival(env, renderer, carpark, logger))
 
     env.run()
     stats_box.show_stats(carpark, instance_type)

@@ -9,7 +9,7 @@ import seaborn as sns
 
 
 class StatsBox:
-    def __init__(self):
+    def __init__(self, logger):
         # TODO: Utilization stats
         self.utilization_stats = {"floors": [[] for _ in range(NUM_OF_LEVELS)]}
         # Track the time after driver drove in to parking spot,
@@ -28,6 +28,7 @@ class StatsBox:
             "Avg. Retrieval Waiting Time": 0,
         }
         self.background = self.get_background()
+        self.logger = logger
 
     def get_background(self):
         # Load the large image
@@ -130,7 +131,7 @@ class StatsBox:
             yield env.timeout(0.1)
 
     def show_stats(self, carpark, instance_type):
-        print("=============STATISTICS=============")
+        self.logger.info("=============STATISTICS=============")
         parking_dict = self.waiting_stats["parking"]
         retrieval_dict = self.waiting_stats["retrieval"]
         service_parking_dict = self.service_stats["parking"]
@@ -165,7 +166,7 @@ class StatsBox:
         times = list(wait_dict.values())
 
         mean_time = np.mean(times)
-        print(
+        self.logger.info(
             f"Mean of {catergory_title} time for a vehicle {title.lower()}: {mean_time:.2f}"
         )
 

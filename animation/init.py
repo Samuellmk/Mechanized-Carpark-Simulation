@@ -120,7 +120,7 @@ class Shuttle_Floor(Object):
         self.bounds = bounds
 
     def move(self):
-        # print("bounds: ", self.bounds)
+        # logger.info("bounds: ", self.bounds)
 
         self.pos[0] = max(self.bounds[0], min(self.pos[0], self.bounds[1]))
         distance = self.destination - self.pos

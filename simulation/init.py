@@ -9,7 +9,7 @@ from classes.carpark import Carpark
 from simulation.utils import create_lifts_data
 
 
-def sim_init(env, carpark_layout, stats_box):
+def sim_init(env, carpark_layout, stats_box, logger):
     # Create Lifts Store
     lifts_travel_data = create_lifts_data(LIFTS)
     lifts_store = simpy.FilterStore(env, capacity=NUM_OF_LIFTS)
@@ -39,5 +39,6 @@ def sim_init(env, carpark_layout, stats_box):
         shuttles_stores,
         carpark_layout,
         stats_box,
+        logger,
     )
     return carpark
