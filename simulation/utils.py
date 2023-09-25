@@ -17,19 +17,23 @@ def process_car_arrival_csv():
     return df["car_arrival_rate"].tolist()
 
 
-def generate_times(car_arrival):
-    total_of_times = []
-    end_range = 100
+def generate_times(car_arrival, logger):
+    times = []
+
     for _ in range(car_arrival):
-        time = random.randint(0, end_range)
-        total_of_times.append(time / 100)
-        end_range -= time
-    return total_of_times
+        # Generate a random time between 0 and the remaining time
+        time_interval = round(random.uniform(0.0, 1.0), 2)
+        times.append(time_interval)
+
+    return times
 
 
-def run(env, renderer, carpark, delay, logger):
-    # Log waiting time - START
+def run(env, renderer, carpark, car_id, delay, logger):
     yield env.timeout(delay)
+    logger.info(
+        "Car %d arrived at the entrance of the carpark at %.2f." % (car_id, env.now)
+    )
+    # Log waiting time - START
     time_start = env.now
 
     parking_lot_request = carpark.total_parking_lot_resources.request()
@@ -46,8 +50,7 @@ def run(env, renderer, carpark, delay, logger):
     )
 
     # duration = weibull_min.rvs(c=CAR_DURATION_K, scale=CAR_DURATION_LAMBDA) * 60
-    # duration = expon.rvs(scale=1 / CAR_RATE)
-    duration = 60.0
+    duration = expon.rvs(scale=1 / CAR_RATE)
     vehicle.popup.set_text("exiting time", round(env.now + duration, 2))
     logger.info(
         "Car %d will be retrieved from parking lot %d at %.2f (+%.2f)"
@@ -58,8 +61,8 @@ def run(env, renderer, carpark, delay, logger):
             duration,
         )
     )
+
     # Wait for the retrieval time
-    # env.process(carpark.exit(vehicle, parking_lot_request, delay=duration))
     yield start_delayed(env, carpark.exit(vehicle, parking_lot_request), delay=duration)
 
 
@@ -75,12 +78,13 @@ def vehicle_arrival(env, renderer, carpark, logger):
     car_id = 1
 
     for car_arrival in car_arrival_list:
-        random_times_list = generate_times(car_arrival)
-
+        logger.warn(f"Time now: {env.now}")
         if car_arrival != 0:
+            random_times_list = generate_times(car_arrival, logger)
+            formatted_list = ", ".join(map(str, random_times_list))
+            logger.info(f"Random list: {formatted_list}")
+            delay = 0.0
             for random_time in random_times_list:
-                # logger.info(env.now, random_time)
-
                 popup = Popup(car_id)
 
                 car_name = random.choice(car_names)
@@ -95,15 +99,11 @@ def vehicle_arrival(env, renderer, carpark, logger):
                 carpark.parking_queue.append(vehicle)
                 carpark.stats_box.stats["Cars Waiting"] += 1
 
-                logger.info(
-                    "Car %d arrived at the entrance of the carpark at %.2f."
-                    % (car_id, env.now)
-                )
-                env.process(run(env, renderer, carpark, random_time, logger))
-
+                env.process(run(env, renderer, carpark, car_id, random_time, logger))
                 car_id += 1
 
         yield env.timeout(1)
+    logger.info("--No more incoming vehicles--")
 
 
 # v_lot is wrt to x axis
@@ -188,9 +188,9 @@ def collect_floor(env, carpark):
         yield env.timeout(DATA_COLLECTION_INTERVAL)
 
 
-def logging_setup():
+def logging_setup(type):
     # Create a logger
-    logger = logging.getLogger("my_logger")
+    logger = logging.getLogger(f"my_logger - {type}")
     logger.setLevel(logging.DEBUG)
 
     # Create a formatter
@@ -203,7 +203,7 @@ def logging_setup():
     console_handler.setFormatter(formatter)
 
     # Create a handler for a log file
-    file_handler = logging.FileHandler("my_log.log")
+    file_handler = logging.FileHandler(f"my_logger - {type}")
     file_handler.setFormatter(formatter)
 
     # Add both handlers to the logger

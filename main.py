@@ -15,8 +15,8 @@ import multiprocessing
 
 
 def simulation(instance_type):
-    np.random.seed(seed=RANDOM_SEEDS)
-    logger = logging_setup()
+    # np.random.seed(seed=RANDOM_SEEDS)
+    logger = logging_setup(instance_type)
 
     pygame.init()
     pygame.display.set_caption(f"Mechanised Carpark Simulation - {instance_type}")
@@ -56,11 +56,16 @@ def simulation(instance_type):
 
 
 if __name__ == "__main__":
-    # # Define the number of parallel simulations
-    # simulations_type = ["Nearest-First"]  # , "Randomised"]  # Adjust as needed
+    # Define the number of parallel simulations
+    simulations_type = [
+        "Nearest-First",
+        "Randomised",
+        "Balanced",
+        "Cache",
+    ]  # Adjust as needed
 
-    # # Create a list to store process objects
-    # processes = []
+    # Create a list to store process objects
+    processes = []
 
     # for type in simulations_type:
     #     process = multiprocessing.Process(target=simulation, args=(type,))
@@ -70,4 +75,11 @@ if __name__ == "__main__":
     # # Wait for all processes to finish
     # for process in processes:
     #     process.join()
-    simulation("Nearest-First")
+
+    # Test multiple time
+    # for i in range(3):
+    #     process = multiprocessing.Process(target=simulation, args=(f"Balanced",))
+    #     processes.append(process)
+    #     process.start()
+
+    simulation("Cache")

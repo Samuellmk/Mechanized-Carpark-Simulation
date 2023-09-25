@@ -18,8 +18,8 @@ from animation.utils import (
 """
 Algorithm:
 [✓] 1. Nearest First - cars are stored nearest to the lift
-[ ] 2. Randomized spot - randomized car into slots of different levels
-[ ] 3. Balance levels - levels are balanced based on capacity of each level (Highest level takes the longest)
+[✓] 2. Randomized spot - randomized car into slots of different levels
+[✓] 3. Balance levels - levels are balanced based on capacity of each level (Highest level takes the longest)
 [ ] 4. Cached Nearest First - first level is used for quick storing of vehicles 
 (Potential shuttle bottleneck when caching), sort to other levels when lifts are not busy
 """
@@ -82,6 +82,23 @@ class Carpark:
     def get_parking_queue(self):
         return self.parking_queue
 
+    def get_shortest_to_lot_avail_lift(self, vehicle, level_layout):
+        floor_num, parking_num = vehicle
+
+        lift_num = self.get_shortest_to_lot_lift(level_layout, parking_num)
+        while lift_num == None:
+            lift_num = self.get_shortest_to_lot_lift(level_layout, parking_num)
+            yield self.env.timeout(0.01)
+            self.logger.info(
+                f"Shuttle availability, {self.shuttles_stores[floor_num].items}"
+            )
+
+        # Request for shuttle
+        # self.check_shuttle_usage(vehicle.parking_lot[0])
+        shuttle = yield self.shuttles_stores[floor_num].get()
+
+        return lift_num, shuttle
+
     def get_shortest_to_lot_lift(self, level_layout, parking_lot_num):
         min_total = float("inf")
         min_lift = None
@@ -100,10 +117,11 @@ class Carpark:
 
         return min_lift
 
-    def check_lift_usage(self):
+    def check_lift_usage(self, car_id):
         if len(self.lifts_store.items) == 0:
             self.logger.info(
-                "Lifts are currently all occupied at %.2f" % (self.env.now)
+                "Car %d - Lifts are currently all occupied at %.2f"
+                % (car_id, self.env.now)
             )
         else:
             available_lifts = [lift.lift_num for lift in self.lifts_store.items]
@@ -127,7 +145,6 @@ class Carpark:
             if (
                 len(shuttle_store.items) > 0
                 and self.available_parking_lots_per_level[idx] > 0
-                # and idx == 3 # DEBUG: For testing a single level
             ):
                 self.available_parking_lots_per_level[idx] -= 1
                 return idx
@@ -146,8 +163,7 @@ class Carpark:
 
         # Request for shuttle
         # self.check_shuttle_usage(avail_shuttle_level)
-        shuttle = yield self.shuttles_stores[floor_level].get()
-        return floor_level, shuttle
+        return floor_level
 
     def check_shuttle_usage(self, level):
         cur_shuttle = self.shuttles_stores[level].items
@@ -171,16 +187,33 @@ class Carpark:
                 avail_shuttle_level = random.randint(0, NUM_OF_LEVELS - 1)
             self.available_parking_lots_per_level[avail_shuttle_level] -= 1
 
-            shuttle = yield self.shuttles_stores[avail_shuttle_level].get()
+        elif self.policy == "Balanced":
+            # Lowest level first
+            min_length = float("inf")
+            avail_shuttle_level = 0
+            for idx, s in enumerate(self.parking_lots_sets):
+                if (
+                    self.available_parking_lots_per_level[idx] > 0
+                    and len(s) < min_length
+                ):
+                    avail_shuttle_level = idx
+                    min_length = len(s)
 
-            self.logger.info(
-                "Level",
-                avail_shuttle_level,
-                self.available_parking_lots_per_level[avail_shuttle_level],
-            )
+            self.available_parking_lots_per_level[avail_shuttle_level] -= 1
+
+            lengths = [len(s) for s in self.parking_lots_sets]
+            length_strings = [str(length) for length in lengths]
+            result = ", ".join(length_strings)
+            print(result)
+
+            print(self.available_parking_lots_per_level)
+
+        # Request for shuttle
+        self.check_shuttle_usage(avail_shuttle_level)
+        shuttle = yield self.shuttles_stores[avail_shuttle_level].get()
 
         # Wait for available lift
-        self.check_lift_usage()
+        self.check_lift_usage(vehicle.id)
         lift = yield self.lifts_store.get()
 
         # Move Lift to ground level
@@ -253,7 +286,7 @@ class Carpark:
 
         # Policy 0: Finding the shortest available travel lot
         # Policy 1: Finding the random spot based on floor
-        if self.policy == "Nearest-First":
+        if self.policy == "Nearest-First" or self.policy == "Balanced":
             parking_lot_num = self.get_shortest_avail_travel_lot(
                 lift, avail_shuttle_level
             )
@@ -319,25 +352,28 @@ class Carpark:
         car is unable to exit, resulting in a dead lock.
         Solution: Reserve a lift first and then shuttle?
         """
+        self.logger.info(
+            "Car %d is at level %d leaving the parking lot"
+            % (vehicle.id, vehicle.parking_lot[0] + 1)
+        )
         # Log waiting time - START
         time_start = self.env.now
 
         cur_level_layout = self.layout[vehicle.parking_lot[0] + 1]
 
         # Wait for available lift
-        self.check_lift_usage()
+        self.check_lift_usage(vehicle.id)
         # Get the closest lift
-        lift_num = self.get_shortest_to_lot_lift(
-            cur_level_layout, vehicle.parking_lot[1]
+        lift_num, shuttle = yield self.env.process(
+            self.get_shortest_to_lot_avail_lift(vehicle.parking_lot, cur_level_layout)
         )
+
+        self.logger.info("Car %d reserving Lift %d" % (vehicle.id, lift_num))
         lift = yield self.lifts_store.get(lambda lift: lift.lift_num == lift_num)
 
-        # Request for shuttle
-        self.check_shuttle_usage(vehicle.parking_lot[0])
-        shuttle = yield self.shuttles_stores[vehicle.parking_lot[0]].get()
         self.logger.info(
-            "Car %d is at level %d using the shuttle"
-            % (vehicle.id, vehicle.parking_lot[0] + 1)
+            "Car %d is at level %d reserved lift %d"
+            % (vehicle.id, vehicle.parking_lot[0] + 1, lift_num)
         )
 
         shuttle_sprite = findShuttle(cur_level_layout, shuttle)
@@ -345,6 +381,10 @@ class Carpark:
 
         # Shuttle from somewhere moves to parking_lot
         shuttle_time_taken = shuttle.time_taken_to_destination(vehicle.parking_lot[1])
+        self.logger.info(
+            "Car %d is at level %d using the shuttle"
+            % (vehicle.id, vehicle.parking_lot[0] + 1)
+        )
         # Animate shuttle from current to next position
         moveShuttle(shuttle_sprite, shuttle_time_taken, parking_coord)
         yield self.env.timeout(shuttle_time_taken)
