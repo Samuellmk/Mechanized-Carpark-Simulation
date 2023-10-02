@@ -50,7 +50,8 @@ def run(env, renderer, carpark, car_id, delay, logger):
     )
 
     # duration = weibull_min.rvs(c=CAR_DURATION_K, scale=CAR_DURATION_LAMBDA) * 60
-    duration = expon.rvs(scale=1 / CAR_RATE)
+    # duration = expon.rvs(scale=1 / CAR_RATE)
+    duration = 0.5
     vehicle.popup.set_text("exiting time", round(env.now + duration, 2))
     logger.info(
         "Car %d will be retrieved from parking lot %d at %.2f (+%.2f)"
@@ -62,8 +63,27 @@ def run(env, renderer, carpark, car_id, delay, logger):
         )
     )
 
-    # Wait for the retrieval time
-    yield start_delayed(env, carpark.exit(vehicle, parking_lot_request), delay=duration)
+    if carpark.policy == "Cache":
+        # Wait for the retrieval time
+        exiting = env.timeout(duration)
+
+        move_process = env.process(
+            carpark.move_vehicle_on_idle_shuttle(vehicle, parking_lot_request)
+        )
+
+        yield exiting | move_process
+
+        # print(move_process.is_alive, move_process.processed, move_process.triggered)
+
+        if move_process.triggered:
+            move_process.interrupt()
+        else:
+            yield move_process
+
+        yield exiting
+        env.process(carpark.exit(vehicle, parking_lot_request))
+    else:
+        start_delayed(env, carpark.exit(vehicle, parking_lot_request), delay=duration)
 
 
 def vehicle_arrival(env, renderer, carpark, logger):
@@ -161,13 +181,13 @@ def create_lifts_data(lifts_pos):
         # South-West part of carpark
         a_lot = 27
         for v_lot in range(1, 8):
-            cur_lots[a_lot] = lift_wrt_lot(lift, v_lot, a_lot, False)
+            cur_lots[a_lot] = lift_wrt_lot(lift, v_lot, a_lot, True)
             a_lot += 1
 
         # South-East part of carpark
         a_lot = 34
         for v_lot in range(20, 26):
-            cur_lots[a_lot] = lift_wrt_lot(lift, v_lot, a_lot, False)
+            cur_lots[a_lot] = lift_wrt_lot(lift, v_lot, a_lot, True)
             a_lot += 1
 
         lifts.append(cur_lots)

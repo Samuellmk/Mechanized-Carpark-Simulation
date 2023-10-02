@@ -20,9 +20,12 @@ class Shuttle:
         distance = c.WIDTH_PER_CAR * abs(self.cur_pos - destination)
         time_taken = distance / c.SHUTTLE_SPEED
 
-        self.cur_pos = destination
+        # self.set_pos(destination)
 
-        return time_taken  # min
+        return time_taken, destination  # min
 
     def move_to_default_pos(self):
         return self.time_taken_to_destination(13)
+
+    def set_pos(self, destination):
+        self.cur_pos = destination

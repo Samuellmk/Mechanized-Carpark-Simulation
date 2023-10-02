@@ -161,9 +161,7 @@ def movePalletToLot(vehicle, time_duration, coord):
     moveVehicle(vehicle, (0, y), (dest_x - x_offset, dest_y))
 
 
-def moveLift(
-    env, layout, lift, dest, time_duration, has_car, vehicle=None, logger=None
-):
+def moveLift(env, layout, lift, dest, time_duration, vehicle=None, logger=None):
     # -ve = going down; +ve = going up; 0 = no change
     no_of_levels = dest - lift.lift_pos
     lifts_dict = findAllLifts(layout, lift)
@@ -187,7 +185,7 @@ def moveLift(
         lifts_dict[old_pos].toggle_Occupancy()
         lifts_dict[lift.lift_pos + 1].toggle_Occupancy()
 
-        if has_car:
+        if vehicle:
             tp_x, tp_y = lifts_dict[lift.lift_pos + 1].rect.topleft
             vehicle.pos[1] = tp_y
 
