@@ -4,7 +4,7 @@ import constants as c
 class Shuttle:
     def __init__(self, env, shuttle_num):
         self.env = env
-        self.shuttle_num = shuttle_num
+        self.num = shuttle_num
         self.cur_pos = 13
 
     def time_taken_to_destination(self, destination, lift=False):

@@ -10,10 +10,11 @@ from classes.vehicle import Vehicle
 from animation.popup import Popup
 
 import logging
+import datetime
 
 
 def process_car_arrival_csv():
-    df = pd.read_csv(join("data", "slices", "6-14 Hours.csv"))
+    df = pd.read_csv(join("data", "slices", "test.csv"))  # "6-14 Hours.csv"))
     return df["car_arrival_rate"].tolist()
 
 
@@ -30,9 +31,7 @@ def generate_times(car_arrival, logger):
 
 def run(env, renderer, carpark, car_id, delay, logger):
     yield env.timeout(delay)
-    logger.info(
-        "Car %d arrived at the entrance of the carpark at %.2f." % (car_id, env.now)
-    )
+    logger.info("Car %d arrived at the entrance of the carpark at %.2f." % (car_id, env.now))
     # Log waiting time - START
     time_start = env.now
 
@@ -45,13 +44,12 @@ def run(env, renderer, carpark, car_id, delay, logger):
 
     # Log waiting time - END
     time_end = env.now
-    carpark.stats_box.waiting_stats["parking"][vehicle.id] = round(
-        time_end - time_start, 2
-    )
+    carpark.stats_box.waiting_stats["parking"][vehicle.id] = round(time_end - time_start, 2)
 
     # duration = weibull_min.rvs(c=CAR_DURATION_K, scale=CAR_DURATION_LAMBDA) * 60
     # duration = expon.rvs(scale=1 / CAR_RATE)
-    duration = 0.5
+    # duration = 0.5  # 0.7  # 0.67  # 0.65  # 0.5  # 0.46  # 0.45  # 0.4  # 0.35  # 0.3
+    duration = random.randint(60, 100)
     vehicle.popup.set_text("exiting time", round(env.now + duration, 2))
     logger.info(
         "Car %d will be retrieved from parking lot %d at %.2f (+%.2f)"
@@ -63,25 +61,21 @@ def run(env, renderer, carpark, car_id, delay, logger):
         )
     )
 
-    if carpark.policy == "Cache":
+    if carpark.policy == "Cache" and vehicle.parking_lot[0] == 0:
         # Wait for the retrieval time
         exiting = env.timeout(duration)
 
-        move_process = env.process(
-            carpark.move_vehicle_on_idle_shuttle(vehicle, parking_lot_request)
-        )
+        move_process = env.process(carpark.move_vehicle_on_idle_shuttle(vehicle, parking_lot_request))
 
         yield exiting | move_process
 
         # print(move_process.is_alive, move_process.processed, move_process.triggered)
 
-        if move_process.triggered:
+        if not move_process.triggered:
             move_process.interrupt()
         else:
-            yield move_process
-
-        yield exiting
-        env.process(carpark.exit(vehicle, parking_lot_request))
+            yield exiting
+            env.process(carpark.exit(vehicle, parking_lot_request))
     else:
         start_delayed(env, carpark.exit(vehicle, parking_lot_request), delay=duration)
 
@@ -98,7 +92,7 @@ def vehicle_arrival(env, renderer, carpark, logger):
     car_id = 1
 
     for car_arrival in car_arrival_list:
-        logger.warn(f"Time now: {env.now}")
+        # logger.warn(f"Time now: {env.now}")
         if car_arrival != 0:
             random_times_list = generate_times(car_arrival, logger)
             formatted_list = ", ".join(map(str, random_times_list))
@@ -128,12 +122,10 @@ def vehicle_arrival(env, renderer, carpark, logger):
 
 # v_lot is wrt to x axis
 # a_lot is the actual lot number
-def lift_wrt_lot(lift_pos, v_lot, a_lot, turning):
+def lift_wrt_lot(pos, v_lot, a_lot, turning):
     time_taken_from_lift_to_pallet = round(WIDTH_PER_CAR / PALLET_SPEED, 2)
 
-    time_taken_from_origin_to_lot = round(
-        (WIDTH_PER_CAR * (abs(lift_pos - v_lot))) / SHUTTLE_SPEED, 2
-    )
+    time_taken_from_origin_to_lot = round((WIDTH_PER_CAR * (abs(pos - v_lot))) / SHUTTLE_SPEED, 2)
 
     # Rotate vehicle
     time_taken_to_rotate = round(180 / (ROTARY * 360), 2)
@@ -154,7 +146,7 @@ def lift_wrt_lot(lift_pos, v_lot, a_lot, turning):
     #     "%.2f time taken to travel %.2fm"
     #     % (
     #         time_taken_from_origin_to_lot,
-    #         WIDTH_PER_CAR * (abs(lift_pos- v_lot)),
+    #         WIDTH_PER_CAR * (abs(pos- v_lot)),
     #     )
     # )
     if turning:
@@ -200,9 +192,7 @@ def collect_floor(env, carpark):
 
     while True:
         for lvl in range(NUM_OF_LEVELS):
-            cars_per_lvl = (
-                NUM_OF_PARKING_PER_LEVEL - carpark.available_parking_lots_per_level[lvl]
-            )
+            cars_per_lvl = NUM_OF_PARKING_PER_LEVEL - carpark.available_parking_lots_per_level[lvl]
             floors[lvl].append(cars_per_lvl / NUM_OF_PARKING_PER_LEVEL)
 
         yield env.timeout(DATA_COLLECTION_INTERVAL)
@@ -210,20 +200,20 @@ def collect_floor(env, carpark):
 
 def logging_setup(type):
     # Create a logger
-    logger = logging.getLogger(f"my_logger - {type}")
+
+    logger = logging.getLogger(f"{type}")
     logger.setLevel(logging.DEBUG)
 
     # Create a formatter
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # Create a handler for stdout (console)
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
 
     # Create a handler for a log file
-    file_handler = logging.FileHandler(f"my_logger - {type}")
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    file_handler = logging.FileHandler(join("logs", f"{type}_{timestamp}.log"))
     file_handler.setFormatter(formatter)
 
     # Add both handlers to the logger

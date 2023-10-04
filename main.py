@@ -10,6 +10,7 @@ import numpy as np
 
 from core import PyGameEnvironment, FrameRenderer
 from animation.stats import StatsBox
+from animation.status_tracker import Status_Tracker
 
 import multiprocessing
 
@@ -46,10 +47,16 @@ def simulation(instance_type):
     carpark = sim_init(env, carpark_layout, stats_box, logger)
     carpark.policy = instance_type
 
+    # Status Tracker
+    status_tracker = Status_Tracker(carpark.lifts_store, carpark.shuttles_stores)
+    renderer.add(status_tracker)
+    carpark.status_tracker = status_tracker
+
     # Car Arrival
     env.process(collect_floor(env, carpark))
     env.process(stats_box.set_stat_time(env, stats_box))
     env.process(vehicle_arrival(env, renderer, carpark, logger))
+    env.process(carpark.update_status())
 
     env.run()
     stats_box.show_stats(carpark, instance_type)
@@ -81,5 +88,5 @@ if __name__ == "__main__":
     #     process = multiprocessing.Process(target=simulation, args=(f"Balanced",))
     #     processes.append(process)
     #     process.start()
-
+    # simulation("Nearest-First")
     simulation("Cache")

@@ -26,9 +26,7 @@ class Object(pygame.sprite.Sprite):
         self.image.blit(text_surface, text_rect.topleft)
 
 
-def generate_floor_texture(
-    width, height, base_image_path, source_rect, border_color=None
-):
+def generate_floor_texture(width, height, base_image_path, source_rect, border_color=None):
     # Load the base image
     image = pygame.image.load(base_image_path).convert_alpha()
 
@@ -90,9 +88,7 @@ class Lift_Floor(Object):
         self.image.blit(self.floor, (0, 0))
         self.add_text("Lift " + str(self.id), 18)
         if not self.is_Occupied:
-            surface = pygame.Surface(
-                (self.image.get_width(), self.image.get_height()), pygame.SRCALPHA
-            )
+            surface = pygame.Surface((self.image.get_width(), self.image.get_height()), pygame.SRCALPHA)
             surface.fill((106, 106, 106, 178))  # 60%
             self.image.blit(surface, (0, 0))
 

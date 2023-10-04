@@ -1,4 +1,5 @@
 import pygame
+import simpy
 from os.path import isfile, join
 from os import listdir
 from constants import *
@@ -60,17 +61,9 @@ def load_sprite_sheets(dir1, direction=False):
 
 def findCoord(level_layout, destObj):
     for sprite in level_layout.sprites():
-        if (
-            isinstance(sprite, Lift_Floor)
-            and hasattr(destObj, "lift_num")
-            and sprite.id == destObj.lift_num
-        ):
+        if isinstance(sprite, Lift_Floor) and hasattr(destObj, "num") and sprite.id == destObj.num:
             return sprite.rect.topleft
-        elif (
-            isinstance(sprite, Shuttle_Floor)
-            and hasattr(destObj, "shuttle_num")
-            and sprite.id == destObj.shuttle_num
-        ):
+        elif isinstance(sprite, Shuttle_Floor) and hasattr(destObj, "num") and sprite.id == destObj.num:
             return sprite.rect.topleft
         elif isinstance(sprite, Parking_Floor) and sprite.id == destObj:
             # logger.info(sprite)
@@ -81,7 +74,7 @@ def findAllLifts(layout, lift):
     lift_sprites = {}
     for floor_no, level_group in layout.items():
         for sprite in level_group.sprites():
-            if isinstance(sprite, Lift_Floor) and sprite.id == lift.lift_num:
+            if isinstance(sprite, Lift_Floor) and sprite.id == lift.num:
                 lift_sprites[floor_no] = sprite
 
     return lift_sprites
@@ -89,16 +82,14 @@ def findAllLifts(layout, lift):
 
 def findShuttle(level_layout, shuttle):
     for sprite in level_layout.sprites():
-        if isinstance(sprite, Shuttle_Floor) and sprite.id == shuttle.shuttle_num:
+        if isinstance(sprite, Shuttle_Floor) and sprite.id == shuttle.num:
             return sprite
 
 
 def moveIntoGroundLift(vehicle, dest_coord, time_duration):
     dest_x, dest_y = dest_coord
     destination = Vector2(dest_x + vehicle.rect.width / 2, dest_y)
-    vehicle.pos = Vector2(
-        destination[0], destination[1] + LIFT_IN_OUT_PX
-    )  # Spawn and put below
+    vehicle.pos = Vector2(destination[0], destination[1] + LIFT_IN_OUT_PX)  # Spawn and put below
     velo = Vector2(0, (dest_y - vehicle.pos[1]) / (time_duration * FRAME_RATE))
     moveVehicle(vehicle, velo, destination)
 
@@ -162,31 +153,43 @@ def movePalletToLot(vehicle, time_duration, coord):
 
 
 def moveLift(env, layout, lift, dest, time_duration, vehicle=None, logger=None):
-    # -ve = going down; +ve = going up; 0 = no change
-    no_of_levels = dest - lift.lift_pos
-    lifts_dict = findAllLifts(layout, lift)
+    try:
+        logger.info("%d: Dest %d, pos: %d" % (lift.num, dest, lift.pos))
+        # -ve = going down; +ve = going up; 0 = no change
+        no_of_levels = dest - lift.pos
+        lifts_dict = findAllLifts(layout, lift)
 
-    if no_of_levels == 0:
-        # sprite = lifts_dict[dest + 1]
-        return
+        if no_of_levels == 0:
+            # sprite = lifts_dict[dest + 1]
+            return
 
-    each_level_time = time_duration / abs(no_of_levels)
-    while no_of_levels != 0:
-        old_pos = lift.lift_pos + 1
-        if no_of_levels < 0:
-            lift.lift_pos -= 1
-        else:
-            lift.lift_pos += 1
-        no_of_levels = dest - lift.lift_pos
+        each_level_time = time_duration / abs(no_of_levels)
+        while no_of_levels != 0:
+            old_pos = lift.pos + 1
+            if no_of_levels < 0:
+                lift.pos -= 1
+            else:
+                lift.pos += 1
+            no_of_levels = dest - lift.pos
 
-        logger.info("Lift %d is moving at %.2f" % (lift.lift_num, env.now))
-        yield env.timeout(each_level_time)
+            logger.info(
+                "Lift %d is moving from %d to %d at %.2f (%d)"
+                % (lift.num, old_pos, lift.pos + 1, env.now, no_of_levels)
+            )
+            yield env.timeout(each_level_time)
 
+            lifts_dict[old_pos].toggle_Occupancy()
+            lifts_dict[lift.pos + 1].toggle_Occupancy()
+
+            if vehicle:
+                tp_x, tp_y = lifts_dict[lift.pos + 1].rect.topleft
+                vehicle.pos[1] = tp_y
+    except simpy.Interrupt:
+        logger.warning("Lift Operation interrupted")
         lifts_dict[old_pos].toggle_Occupancy()
-        lifts_dict[lift.lift_pos + 1].toggle_Occupancy()
-
+        lifts_dict[lift.pos + 1].toggle_Occupancy()
         if vehicle:
-            tp_x, tp_y = lifts_dict[lift.lift_pos + 1].rect.topleft
+            tp_x, tp_y = lifts_dict[old_pos].rect.topleft
             vehicle.pos[1] = tp_y
 
 
