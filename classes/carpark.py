@@ -47,6 +47,8 @@ class Carpark:
         while True:
             self.status_tracker.s_lifts = self.lifts_store
             self.status_tracker.s_shuttles = self.shuttles_stores
+            self.status_tracker.parking_lots = self.available_parking_lots_per_level
+            # print(self.parking_lots_sets)
 
             yield self.env.timeout(5 / 60)  # Every 5s
 
@@ -478,8 +480,6 @@ class Carpark:
                             % (vehicle.id, num, 0, f_level, self.env.now)
                         )
 
-                        print(lift, shuttle)
-
                         # Need to find a parking spot in higher level and reserve it
                         f_parking_lot_num = self.get_shortest_avail_travel_lot(lift, f_level)
 
@@ -609,7 +609,6 @@ class Carpark:
                         )
                         yield self.env.timeout(time_taken_to_parking["origin_lot"])
                         state = 9
-
                         movePalletToLot(vehicle, time_taken_to_parking["pallet_lot"], parking_coord)
                         yield self.env.timeout(time_taken_to_parking["pallet_lot"])
 
@@ -635,9 +634,10 @@ class Carpark:
             self.logger.warning(f"{f_shuttle}")
         parking_coord = findCoord(self.layout[f_level + 1], f_parking_lot_num)
 
-        if state >= 1:
+        if state >= 1 and state <= 7:
             self.available_parking_lots_per_level[f_level] += 1
             self.parking_lots_sets[f_level].remove(f_parking_lot_num)
+            self.shuttles_stores[f_level].put(f_shuttle)
 
         if state == 5:
             lift_p.interrupt()
@@ -698,7 +698,6 @@ class Carpark:
             self.available_parking_lots_per_level[0] += 1
             self.parking_lots_sets[0].remove(vehicle.parking_lot[1])
 
-            self.available_parking_lots_per_level[f_level] -= 1
             self.parking_lots_sets[f_level].add(f_parking_lot_num)
             vehicle.parking_lot = (f_level, f_parking_lot_num)
 

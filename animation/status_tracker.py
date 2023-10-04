@@ -8,6 +8,7 @@ class Status_Tracker:
         self.default_lifts = self.get_lifts(lifts_store)
         self.s_lifts = None
         self.s_shuttles = None
+        self.parking_lots = None
 
     def get_lifts(self, lifts_store):
         lifts_num = []
@@ -65,8 +66,20 @@ class Status_Tracker:
             win.blit(text, text_rect)
             y += self.font.get_height()
 
-        # return y
+        return y
+
+    def parking_lots_availability(self, win, start):
+        y = start
+        for lvl, parking_level in enumerate(self.parking_lots):
+            word = f"Level {lvl}: {parking_level} lots"
+            text = self.font.render(word, True, (0, 0, 0))
+            text_rect = text.get_rect()
+            text_rect.x = 5
+            text_rect.y = y
+            win.blit(text, text_rect)
+            y += self.font.get_height()
 
     def __call__(self, win):
         bottom = self.lifts_availability(win)
-        self.shuttles_availability(win, start=bottom + 10)
+        bottom = self.shuttles_availability(win, start=bottom + 10)
+        self.parking_lots_availability(win, start=bottom + 10)

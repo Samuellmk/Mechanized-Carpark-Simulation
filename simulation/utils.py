@@ -14,7 +14,7 @@ import datetime
 
 
 def process_car_arrival_csv():
-    df = pd.read_csv(join("data", "slices", "test.csv"))  # "6-14 Hours.csv"))
+    df = pd.read_csv(join("data", "slices", "6-14 Hours.csv"))  # "test.csv"))
     return df["car_arrival_rate"].tolist()
 
 
@@ -47,9 +47,9 @@ def run(env, renderer, carpark, car_id, delay, logger):
     carpark.stats_box.waiting_stats["parking"][vehicle.id] = round(time_end - time_start, 2)
 
     # duration = weibull_min.rvs(c=CAR_DURATION_K, scale=CAR_DURATION_LAMBDA) * 60
-    # duration = expon.rvs(scale=1 / CAR_RATE)
-    # duration = 0.5  # 0.7  # 0.67  # 0.65  # 0.5  # 0.46  # 0.45  # 0.4  # 0.35  # 0.3
-    duration = random.randint(60, 100)
+    duration = expon.rvs(scale=1 / CAR_RATE)
+    # duration = 0.7  # 0.7  # 0.67  # 0.65  # 0.6  # 0.46  # 0.45  # 0.4  # 0.35  # 0.3
+    # duration = random.randint(60, 100)
     vehicle.popup.set_text("exiting time", round(env.now + duration, 2))
     logger.info(
         "Car %d will be retrieved from parking lot %d at %.2f (+%.2f)"
