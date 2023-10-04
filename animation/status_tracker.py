@@ -71,7 +71,7 @@ class Status_Tracker:
     def parking_lots_availability(self, win, start):
         y = start
         for lvl, parking_level in enumerate(self.parking_lots):
-            word = f"Level {lvl}: {parking_level} lots"
+            word = f"Level {lvl + 1}: {parking_level} lots"
             text = self.font.render(word, True, (0, 0, 0))
             text_rect = text.get_rect()
             text_rect.x = 5
