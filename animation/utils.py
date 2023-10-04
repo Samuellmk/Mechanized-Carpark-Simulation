@@ -63,7 +63,6 @@ def load_sprite_sheets(dir1, direction=False):
 
 def findCoord(level_layout, destObj):
     for sprite in level_layout.sprites():
-        print(sprite, destObj)
         if isinstance(sprite, Lift_Floor) and isinstance(destObj, Lift) and sprite.id == destObj.num:
             return sprite.rect.topleft
         elif isinstance(sprite, Shuttle_Floor) and isinstance(destObj, Shuttle) and sprite.id == destObj.num:
