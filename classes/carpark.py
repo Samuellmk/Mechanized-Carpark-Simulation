@@ -206,7 +206,6 @@ class Carpark:
 
         else:
             raise Exception("No policy specified...")
-
         # Request for shuttle
         self.check_shuttle_usage(avail_shuttle_level)
         shuttle = yield self.shuttles_stores[avail_shuttle_level].get()

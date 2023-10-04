@@ -5,6 +5,8 @@ from os import listdir
 from constants import *
 
 from animation.init import Lift_Floor, Shuttle_Floor, Parking_Floor
+from classes.lift import Lift
+from classes.shuttle import Shuttle
 from pygame.math import Vector2
 
 FRAME_RATE = FPS * FACTOR
@@ -61,9 +63,10 @@ def load_sprite_sheets(dir1, direction=False):
 
 def findCoord(level_layout, destObj):
     for sprite in level_layout.sprites():
-        if isinstance(sprite, Lift_Floor) and hasattr(destObj, "num") and sprite.id == destObj.num:
+        print(sprite, destObj)
+        if isinstance(sprite, Lift_Floor) and isinstance(destObj, Lift) and sprite.id == destObj.num:
             return sprite.rect.topleft
-        elif isinstance(sprite, Shuttle_Floor) and hasattr(destObj, "num") and sprite.id == destObj.num:
+        elif isinstance(sprite, Shuttle_Floor) and isinstance(destObj, Shuttle) and sprite.id == destObj.num:
             return sprite.rect.topleft
         elif isinstance(sprite, Parking_Floor) and sprite.id == destObj:
             # logger.info(sprite)
