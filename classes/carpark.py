@@ -393,7 +393,7 @@ class Carpark:
                     vehicle.parking_lot[0],
                     lift_time_taken,
                     logger=self.logger,
-                    fromWhere="Cache-6|8",
+                    fromWhere="Exiting-6|8",
                 )
             )
 
@@ -429,7 +429,9 @@ class Carpark:
         self.logger.info("[Exiting] Car %d exited the carpark at %.2f" % (vehicle.id, self.env.now))
 
         # Move shuttle back to default position and move back shuttle to default pos
-        self.env.process(self.moving_shuttle_back_to_default(shuttle, shuttle_sprite, vehicle.parking_lot[0]))
+        lift_movement = self.env.process(
+            self.moving_shuttle_back_to_default(shuttle, shuttle_sprite, vehicle.parking_lot[0])
+        )
 
         self.stats_box.stats["Cars Parked"] -= 1
         self.stats_box.stats["Cars Exited"] += 1
@@ -453,6 +455,7 @@ class Carpark:
         vehicle.parking_lot = (None, None)
 
         # Put lift back into store
+        yield lift_movement
         yield self.lifts_store.put(lift)
         self.logger.warning("[Exiting] Lift %d back into store" % (lift.num))
 
@@ -479,7 +482,7 @@ class Carpark:
                     ):
                         # ----------GROUND FLOOR----------
                         # Interrupt in case the vehicle wants to exit during shuffling?
-                        layout = self.layout[1]
+                        ground_layout = self.layout[1]
                         # Get the closest lift and floor shuttle
 
                         self.logger.info("[Cache] Car %d is reserving shuttle" % (vehicle.id))
@@ -503,8 +506,8 @@ class Carpark:
                         yield self.env.process(self.move_lift_ground_level(lift, fromWhere="Cache"))
                         state = 1
 
-                        shuttle_sprite = findShuttle(layout, shuttle)
-                        parking_coord = findCoord(layout, vehicle.parking_lot[1])
+                        shuttle_sprite = findShuttle(ground_layout, shuttle)
+                        parking_coord = findCoord(ground_layout, vehicle.parking_lot[1])
 
                         # Shuttle from somewhere moves to parking_lot
                         (
@@ -518,7 +521,7 @@ class Carpark:
                         shuttle.set_pos(destination)
                         state = 2
 
-                        lift_coord = findCoord(layout, lift)
+                        lift_coord = findCoord(ground_layout, lift)
                         lift_coord_center = (lift_coord[0] + GRID_WIDTH, lift_coord[1])
 
                         time_taken_to_lift = lift.travel_times.get(vehicle.parking_lot[1])
@@ -630,7 +633,9 @@ class Carpark:
                             "[Cache] Car %d parked at level %d parking lot %d at %.2f"
                             % (vehicle.id, f_level + 1, f_parking_lot_num, self.env.now)
                         )
-                        self.env.process(self.moving_shuttle_back_to_default(f_shuttle, f_shuttle_sprite, f_level))
+                        lift_movement = self.env.process(
+                            self.moving_shuttle_back_to_default(f_shuttle, f_shuttle_sprite, f_level)
+                        )
 
                         # ----------HIGHER FLOOR END----------
 
@@ -641,6 +646,7 @@ class Carpark:
                         vehicle.parking_lot = (f_level, f_parking_lot_num)
 
                         # Put lift back into store
+                        yield lift_movement
                         yield self.lifts_store.put(lift)
                         self.logger.warning("[Cache] Lift %d back into store" % (lift.num))
                         return
