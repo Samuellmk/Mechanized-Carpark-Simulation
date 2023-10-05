@@ -154,31 +154,27 @@ def movePalletToLot(vehicle, time_duration, coord):
     moveVehicle(vehicle, (0, y), (dest_x - x_offset, dest_y))
 
 
-def moveLift(env, layout, lift, dest, time_duration, vehicle=None, logger=None):
+def moveLift(env, layout, lift, dest, time_duration, vehicle=None, logger=None, fromWhere=None):
     try:
-        logger.info("%d: Dest %d, pos: %d" % (lift.num, dest, lift.pos))
+        logger.info("[%s] Lift %d: Dest %d, pos: %d" % (fromWhere, lift.num, dest, lift.pos))
         # -ve = going down; +ve = going up; 0 = no change
         no_of_levels = dest - lift.pos
         lifts_dict = findAllLifts(layout, lift)
 
-        if no_of_levels == 0:
+        if no_of_levels == 0 or time_duration == 0:
             # sprite = lifts_dict[dest + 1]
             return
 
         each_level_time = time_duration / abs(no_of_levels)
-        while no_of_levels != 0:
+        for _ in range(abs(no_of_levels)):
+            # if lift.pos < 0:
+            #     return
+
             old_pos = lift.pos + 1
             if no_of_levels < 0:
                 lift.pos -= 1
             else:
                 lift.pos += 1
-            no_of_levels = dest - lift.pos
-
-            logger.info(
-                "Lift %d is moving from %d to %d at %.2f (%d)"
-                % (lift.num, old_pos, lift.pos + 1, env.now, no_of_levels)
-            )
-            yield env.timeout(each_level_time)
 
             lifts_dict[old_pos].toggle_Occupancy()
             lifts_dict[lift.pos + 1].toggle_Occupancy()
@@ -186,6 +182,12 @@ def moveLift(env, layout, lift, dest, time_duration, vehicle=None, logger=None):
             if vehicle:
                 tp_x, tp_y = lifts_dict[lift.pos + 1].rect.topleft
                 vehicle.pos[1] = tp_y
+
+            yield env.timeout(each_level_time)
+            logger.info(
+                "Lift %d has moved from %d to %d at %.2f (%d)"
+                % (lift.num, old_pos, lift.pos + 1, env.now, no_of_levels)
+            )
     except simpy.Interrupt:
         logger.warning("Lift Operation interrupted")
         lifts_dict[old_pos].toggle_Occupancy()

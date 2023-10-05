@@ -40,8 +40,8 @@ TOTAL_WIDTH = 26 * GRID_WIDTH + 4  # Border
 STATS_HEIGHT = 32 * 2
 LIFT_IN_OUT_PX = 50
 
-# FACTOR = 0.23  # ~ 256x fast forward
-FACTOR = 0.47  # ~128x fast forward
+FACTOR = 0.23  # ~ 256x fast forward
+# FACTOR = 0.47  # ~128x fast forward
 # FACTOR = 0.9  # ~64x fast forward
 # FACTOR = 1.875  # 32x fast forward
 # FACTOR = 3.75  # 16x fast forward

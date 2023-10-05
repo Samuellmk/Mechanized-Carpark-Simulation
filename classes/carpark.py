@@ -48,9 +48,13 @@ class Carpark:
             self.status_tracker.s_lifts = self.lifts_store
             self.status_tracker.s_shuttles = self.shuttles_stores
             self.status_tracker.parking_lots = self.available_parking_lots_per_level
-            # print(self.parking_lots_sets)
 
             yield self.env.timeout(5 / 60)  # Every 5s
+
+    def update_lifts(self):
+        available_lifts = [lift.num for lift in self.lifts_store.items]
+        sorted_lifts = sorted(available_lifts)
+        self.logger.info("Lifts: %s at %.2f" % (", ".join(map(str, sorted_lifts)), self.env.now))
 
     def get_shortest_avail_travel_lot(self, lift, level):
         available_lots = [lot for lot in lift.travel_times if lot not in self.parking_lots_sets[level]]
@@ -155,7 +159,7 @@ class Carpark:
         if len(cur_shuttle) == 0:
             self.logger.info("Level %d's Shuttle is currently all occupied at %.2f" % (level + 1, self.env.now))
 
-    def move_lift_ground_level(self, lift, vehicle=None, release=False):
+    def move_lift_ground_level(self, lift, vehicle=None, release=False, fromWhere=None):
         lift_time_taken_to_ground = lift.time_taken_from_origin_to_dest(dest=0)
         yield self.env.process(
             moveLift(
@@ -166,10 +170,15 @@ class Carpark:
                 lift_time_taken_to_ground,
                 vehicle=vehicle,
                 logger=self.logger,
+                fromWhere=fromWhere,
             )
         )
         if release:
+            self.update_lifts()
             yield self.lifts_store.put(lift)
+            self.logger.warning("Lift %d back into store" % (lift.num))
+
+        self.update_lifts()
 
     def park(self, vehicle):
         # To which level? Check based on shuttle and available level
@@ -208,6 +217,7 @@ class Carpark:
 
         else:
             raise Exception("No policy specified...")
+
         # Request for shuttle
         self.check_shuttle_usage(avail_shuttle_level)
         shuttle = yield self.shuttles_stores[avail_shuttle_level].get()
@@ -217,7 +227,7 @@ class Carpark:
         lift = yield self.lifts_store.get()
 
         # Move Lift to ground level
-        yield self.env.process(self.move_lift_ground_level(lift))
+        yield self.env.process(self.move_lift_ground_level(lift, fromWhere="Parking"))
 
         self.stats_box.stats["Cars Waiting"] -= 1
 
@@ -251,6 +261,7 @@ class Carpark:
                 lift_time_taken,
                 vehicle=vehicle,
                 logger=self.logger,
+                fromWhere="Parking",
             )
         )
 
@@ -289,7 +300,7 @@ class Carpark:
         yield self.env.timeout(time_taken_to_parking["lift_pallet"])
 
         # Put lift back into store - send lift back to ground level
-        self.env.process(self.move_lift_ground_level(lift, release=True))
+        self.env.process(self.move_lift_ground_level(lift, release=True, fromWhere="Parking"))
 
         parking_coord = findCoord(cur_level_layout, parking_lot_num)
         # self.logger.info("Parking: ", parking_coord)
@@ -345,7 +356,8 @@ class Carpark:
             shuttle = yield self.shuttles_stores[vehicle.parking_lot[0]].get()
             lift = yield self.lifts_store.get(lambda lift: lift.num == num)
             self.logger.info(
-                "[Exiting] Car %d reserving lift %d and level %d shuttle" % (vehicle.id, num, vehicle.parking_lot[0])
+                "[Exiting] Car %d reserving lift %d and level %d shuttle"
+                % (vehicle.id, num, vehicle.parking_lot[0] + 1)
             )
         else:
             self.logger.info(
@@ -381,6 +393,7 @@ class Carpark:
                     vehicle.parking_lot[0],
                     lift_time_taken,
                     logger=self.logger,
+                    fromWhere="Cache-6|8",
                 )
             )
 
@@ -405,8 +418,7 @@ class Carpark:
             )
 
         # Lift travel time to reach ground level
-        # TODO: vehicle is not moving with the lift to exit
-        yield self.env.process(self.move_lift_ground_level(lift, vehicle))
+        yield self.env.process(self.move_lift_ground_level(lift, vehicle, fromWhere="Exiting"))
         self.logger.info("[Exiting] Lift %d move to level %d at %.2f" % (lift.num, lift.pos + 1, self.env.now))
 
         # Release parking spot
@@ -442,6 +454,7 @@ class Carpark:
 
         # Put lift back into store
         yield self.lifts_store.put(lift)
+        self.logger.warning("[Exiting] Lift %d back into store" % (lift.num))
 
     def move_vehicle_on_idle_shuttle(self, vehicle, parking_lot_request):
         state = 0
@@ -452,7 +465,7 @@ class Carpark:
         try:
             while True:
                 # self.logger.warning(self.available_parking_lots_per_level)
-                self.logger.warning("Car %d waiting to move to higher level" % (vehicle.id))
+                # self.logger.warning("Car %d waiting to move to higher level" % (vehicle.id))
 
                 for f_level, level_avail_lots in enumerate(self.available_parking_lots_per_level):
                     if f_level == 0:
@@ -477,7 +490,7 @@ class Carpark:
                         lift = yield self.lifts_store.get(lambda lift: lift.num == num)
                         self.logger.info(
                             "[Cache] Car %d reserving Lift %d and levels %d, %d shuttle at %.2f"
-                            % (vehicle.id, num, 0, f_level, self.env.now)
+                            % (vehicle.id, num, 1, f_level + 1, self.env.now)
                         )
 
                         # Need to find a parking spot in higher level and reserve it
@@ -487,7 +500,7 @@ class Carpark:
                         self.parking_lots_sets[f_level].add(f_parking_lot_num)
 
                         # Move Lift to ground level
-                        yield self.env.process(self.move_lift_ground_level(lift))
+                        yield self.env.process(self.move_lift_ground_level(lift, fromWhere="Cache"))
                         state = 1
 
                         shuttle_sprite = findShuttle(layout, shuttle)
@@ -555,6 +568,7 @@ class Carpark:
                                 lift_time_taken_to_higher_level,
                                 vehicle=vehicle,
                                 logger=self.logger,
+                                fromWhere="Cache",
                             )
                         )
                         yield lift_p
@@ -569,7 +583,6 @@ class Carpark:
                             )
                         )
                         state = 6
-
                         # ----------HIGHER FLOOR----------
                         f_layout = self.layout[f_level + 1]
 
@@ -597,10 +610,9 @@ class Carpark:
                         state = 8
 
                         # Put lift back into store - send lift back to ground level
-                        self.env.process(self.move_lift_ground_level(lift, release=True))
+                        self.env.process(self.move_lift_ground_level(lift, fromWhere="Cache"))
 
                         parking_coord = findCoord(f_layout, f_parking_lot_num)
-
                         moveOriginToLot(
                             vehicle,
                             f_shuttle_sprite,
@@ -609,16 +621,17 @@ class Carpark:
                         )
                         yield self.env.timeout(time_taken_to_parking["origin_lot"])
                         state = 9
+
                         movePalletToLot(vehicle, time_taken_to_parking["pallet_lot"], parking_coord)
                         yield self.env.timeout(time_taken_to_parking["pallet_lot"])
 
                         # vehicle.popup.set_text("parked time", round(self.env.now, 2))
                         self.logger.info(
                             "[Cache] Car %d parked at level %d parking lot %d at %.2f"
-                            % (vehicle.id, f_level, f_parking_lot_num, self.env.now)
+                            % (vehicle.id, f_level + 1, f_parking_lot_num, self.env.now)
                         )
-
                         self.env.process(self.moving_shuttle_back_to_default(f_shuttle, f_shuttle_sprite, f_level))
+
                         # ----------HIGHER FLOOR END----------
 
                         # Release parking spot from ground level
@@ -626,12 +639,16 @@ class Carpark:
                         self.parking_lots_sets[0].remove(vehicle.parking_lot[1])
 
                         vehicle.parking_lot = (f_level, f_parking_lot_num)
+
+                        # Put lift back into store
+                        yield self.lifts_store.put(lift)
+                        self.logger.warning("[Cache] Lift %d back into store" % (lift.num))
                         return
 
                 yield self.env.timeout(3 / 60)
         except simpy.Interrupt:
             self.logger.info("[Cache] Car %d is not going to be shifted, stopped at state %d" % (vehicle.id, state))
-            self.logger.warning(f"{f_shuttle}")
+
         parking_coord = findCoord(self.layout[f_level + 1], f_parking_lot_num)
 
         if state >= 1 and state <= 7:
@@ -668,6 +685,7 @@ class Carpark:
                     f_level,
                     lift_time_taken_to_higher_level,
                     logger=self.logger,
+                    fromWhere="Cache-7",
                 )
             )
 

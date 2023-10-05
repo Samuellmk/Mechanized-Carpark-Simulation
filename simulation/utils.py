@@ -14,7 +14,8 @@ import datetime
 
 
 def process_car_arrival_csv():
-    df = pd.read_csv(join("data", "slices", "6-14 Hours.csv"))  # "test.csv"))
+    df = pd.read_csv(join("data", "slices", "6-14 Hours.csv"))
+    # df = pd.read_csv(join("data", "slices", "test.csv"))
     return df["car_arrival_rate"].tolist()
 
 
@@ -48,7 +49,7 @@ def run(env, renderer, carpark, car_id, delay, logger):
 
     # duration = weibull_min.rvs(c=CAR_DURATION_K, scale=CAR_DURATION_LAMBDA) * 60
     duration = expon.rvs(scale=1 / CAR_RATE)
-    # duration = 0.7  # 0.7  # 0.67  # 0.65  # 0.6  # 0.46  # 0.45  # 0.4  # 0.35  # 0.3
+    # duration = 0.7  # 0.7  # 0.67  # 0.65  # 0.6  # 0.46  # 0.42  # 0.4  # 0.35  # 0.3
     # duration = random.randint(60, 100)
     vehicle.popup.set_text("exiting time", round(env.now + duration, 2))
     logger.info(
@@ -68,8 +69,6 @@ def run(env, renderer, carpark, car_id, delay, logger):
         move_process = env.process(carpark.move_vehicle_on_idle_shuttle(vehicle, parking_lot_request))
 
         yield exiting | move_process
-
-        # print(move_process.is_alive, move_process.processed, move_process.triggered)
 
         if not move_process.triggered:
             move_process.interrupt()
