@@ -613,7 +613,7 @@ class Carpark:
                         state = 8
 
                         # Put lift back into store - send lift back to ground level
-                        self.env.process(self.move_lift_ground_level(lift, fromWhere="Cache"))
+                        lift_movement = self.env.process(self.move_lift_ground_level(lift, fromWhere="Cache"))
 
                         parking_coord = findCoord(f_layout, f_parking_lot_num)
                         moveOriginToLot(
@@ -633,9 +633,7 @@ class Carpark:
                             "[Cache] Car %d parked at level %d parking lot %d at %.2f"
                             % (vehicle.id, f_level + 1, f_parking_lot_num, self.env.now)
                         )
-                        lift_movement = self.env.process(
-                            self.moving_shuttle_back_to_default(f_shuttle, f_shuttle_sprite, f_level)
-                        )
+                        self.env.process(self.moving_shuttle_back_to_default(f_shuttle, f_shuttle_sprite, f_level))
 
                         # ----------HIGHER FLOOR END----------
 
