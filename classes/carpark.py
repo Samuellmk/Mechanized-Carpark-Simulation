@@ -20,7 +20,7 @@ Algorithm:
 [✓] 1. Nearest First - cars are stored nearest to the lift
 [✓] 2. Randomized spot - randomized car into slots of different levels
 [✓] 3. Balance levels - levels are balanced based on capacity of each level (Highest level takes the longest)
-[ ] 4. Cached Nearest First - first level is used for quick storing of vehicles 
+[✓] 4. Cached Nearest First - first level is used for quick storing of vehicles 
 (Potential shuttle bottleneck when caching), sort to other levels when lifts are not busy
 """
 

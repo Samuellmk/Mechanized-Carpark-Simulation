@@ -14,7 +14,9 @@ import datetime
 
 
 def process_car_arrival_csv():
-    df = pd.read_csv(join("data", "slices", "6-14 Hours.csv"))
+    period = os.environ["PERIOD"]
+    df = pd.read_csv(join("data", "slices", period))
+    # df = pd.read_csv(join("data", "slices", "6-14 Hours.csv"))
     # df = pd.read_csv(join("data", "slices", "test.csv"))
     return df["car_arrival_rate"].tolist()
 

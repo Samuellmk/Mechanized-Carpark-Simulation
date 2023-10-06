@@ -175,4 +175,5 @@ pyrightconfig.json
 # Custom
 cloud-data-retrieval/*.json
 logs/
+output/
 .VSCodeCounter

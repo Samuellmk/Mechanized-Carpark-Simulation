@@ -1,5 +1,7 @@
 import pygame
 from constants import *
+import os
+import pickle
 from os.path import join
 import numpy as np
 import matplotlib.pyplot as plt
@@ -32,9 +34,7 @@ class StatsBox:
 
     def get_background(self):
         # Load the large image
-        large_image = pygame.image.load(
-            join("assets", "Background", "TileableWall.png")
-        )
+        large_image = pygame.image.load(join("assets", "Background", "TileableWall.png"))
 
         tile = pygame.transform.scale(
             large_image,
@@ -64,9 +64,7 @@ class StatsBox:
             parking = list(self.waiting_stats["parking"].values())
             retrieval_list = list(self.waiting_stats["retrieval"].values())
             self.stats["Avg. Parking Waiting Time"] = round(np.mean(parking), 3)
-            self.stats["Avg. Retrieval Waiting Time"] = round(
-                np.mean(retrieval_list), 3
-            )
+            self.stats["Avg. Retrieval Waiting Time"] = round(np.mean(retrieval_list), 3)
 
     def calculate_actual_time(self):
         # Calculate hours
@@ -100,9 +98,7 @@ class StatsBox:
         return default_color
 
     def __call__(self, win):
-        self.stats["Total Car Served"] = (
-            self.stats["Cars Parked"] + self.stats["Cars Exited"]
-        )
+        self.stats["Total Car Served"] = self.stats["Cars Parked"] + self.stats["Cars Exited"]
 
         # Calculate the actual time
         self.calculate_actual_time()
@@ -138,6 +134,20 @@ class StatsBox:
         service_retrieval_dict = self.service_stats["retrieval"]
         floors_occupancy = self.utilization_stats["floors"]
 
+        period = os.environ["PERIOD"]
+        period = period.replace(".csv", "")
+        file_name = f"{instance_type}-{period}.pkl"
+        file_path = join("output", file_name)
+        with open(file_path, "wb") as file:
+            data_to_dump = {
+                "parking": parking_dict,
+                "retrieval": retrieval_dict,
+                "service_parking": service_parking_dict,
+                "service_retrieval": service_retrieval_dict,
+                "floors_occupancy": floors_occupancy,
+            }
+            pickle.dump(data_to_dump, file)
+
         sns.set(style="whitegrid")
         fig = plt.figure(figsize=(16, 8))
         fig.canvas.manager.set_window_title(f"{instance_type} Policy")
@@ -152,9 +162,7 @@ class StatsBox:
         self.plot_waiting_service_time(parking_dict, "waiting", "Parking", ax1)
         self.plot_waiting_service_time(retrieval_dict, "waiting", "Retrieval", ax2)
         self.plot_waiting_service_time(service_parking_dict, "service", "Parking", ax3)
-        self.plot_waiting_service_time(
-            service_retrieval_dict, "service", "Retrieval", ax4
-        )
+        self.plot_waiting_service_time(service_retrieval_dict, "service", "Retrieval", ax4)
         self.plot_floors_trend(floors_occupancy, "Level", ax5)
 
         plt.tight_layout()
@@ -166,9 +174,7 @@ class StatsBox:
         times = list(wait_dict.values())
 
         mean_time = np.mean(times)
-        self.logger.info(
-            f"Mean of {catergory_title} time for a vehicle {title.lower()}: {mean_time:.2f}"
-        )
+        self.logger.info(f"Mean of {catergory_title} time for a vehicle {title.lower()}: {mean_time:.2f}")
 
         # Plot the data as a bar chart
         sns.barplot(
