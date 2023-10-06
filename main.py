@@ -74,14 +74,14 @@ if __name__ == "__main__":
     # Create a list to store process objects
     processes = []
 
-    # for type in simulations_type:
-    #     process = multiprocessing.Process(target=simulation, args=(type,))
-    #     processes.append(process)
-    #     process.start()
+    for type in simulations_type:
+        process = multiprocessing.Process(target=simulation, args=(type,))
+        processes.append(process)
+        process.start()
 
-    # # Wait for all processes to finish
-    # for process in processes:
-    #     process.join()
+    # Wait for all processes to finish
+    for process in processes:
+        process.join()
 
     # Test multiple time
     # for i in range(3):
@@ -89,4 +89,4 @@ if __name__ == "__main__":
     #     processes.append(process)
     #     process.start()
     # simulation("Nearest-First")
-    simulation("Cache")
+    # simulation("Cache")
