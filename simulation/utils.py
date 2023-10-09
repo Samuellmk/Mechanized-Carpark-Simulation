@@ -2,7 +2,7 @@ import pandas as pd
 import os
 from simpy.util import start_delayed
 import random
-from scipy.stats import expon
+from scipy.stats import weibull_min
 from constants import *
 from os.path import join
 
@@ -49,8 +49,8 @@ def run(env, renderer, carpark, car_id, delay, logger):
     time_end = env.now
     carpark.stats_box.waiting_stats["parking"][vehicle.id] = round(time_end - time_start, 2)
 
-    # duration = weibull_min.rvs(c=CAR_DURATION_K, scale=CAR_DURATION_LAMBDA) * 60
-    duration = expon.rvs(scale=1 / CAR_RATE)
+    duration = weibull_min.rvs(c=CAR_DURATION_SHAPE, scale=CAR_DURATION_SCALE) * 60
+    # duration = expon.rvs(scale=1 / CAR_RATE)
     # duration = 0.7  # 0.7  # 0.67  # 0.65  # 0.6  # 0.46  # 0.42  # 0.4  # 0.35  # 0.3
     # duration = random.randint(60, 100)
     vehicle.popup.set_text("exiting time", round(env.now + duration, 2))

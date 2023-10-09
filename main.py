@@ -16,7 +16,7 @@ import multiprocessing
 
 
 def simulation(instance_type):
-    # np.random.seed(seed=RANDOM_SEEDS)
+    np.random.seed(seed=RANDOM_SEEDS)
     logger = logging_setup(instance_type)
 
     pygame.init()

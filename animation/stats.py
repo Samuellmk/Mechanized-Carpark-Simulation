@@ -165,7 +165,12 @@ class StatsBox:
         self.plot_waiting_service_time(service_retrieval_dict, "service", "Retrieval", ax4)
         self.plot_floors_trend(floors_occupancy, "Level", ax5)
 
-        plt.tight_layout()
+        fig.suptitle(f"{instance_type}")
+        fig.tight_layout()
+
+        output_filename = join("output", "stats", f"{instance_type}.png")
+        plt.savefig(output_filename)
+
         plt.show()
 
     def plot_waiting_service_time(self, wait_dict, catergory_title, title, ax):
@@ -184,7 +189,7 @@ class StatsBox:
             ax=ax,
         )
         ax.set_xlabel("Car ID")
-        ax.set_ylabel(f"{catergory_title.capitalize()} Time for {title} (mins)")
+        ax.set_ylabel(f"{catergory_title.capitalize()} Time for {title}\n(mins)")
         ax.set_title(f"{catergory_title.capitalize()} Time for {title} of Vehicles")
         ax.set_xticks(np.arange(0, len(labels) + 1, 30))
         ax.set_xticklabels(ax.get_xticks(), rotation=45)
