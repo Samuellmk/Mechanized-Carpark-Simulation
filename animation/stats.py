@@ -12,7 +12,6 @@ import seaborn as sns
 
 class StatsBox:
     def __init__(self, logger):
-        # TODO: Utilization stats
         self.utilization_stats = {"floors": [[] for _ in range(NUM_OF_LEVELS)]}
         # Track the time after driver drove in to parking spot,
         # Track the time from parking spot to before driver drive vehicle out
