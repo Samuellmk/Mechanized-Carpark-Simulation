@@ -15,7 +15,7 @@ class StatsBox:
         self.utilization_stats = {"floors": [[] for _ in range(NUM_OF_LEVELS)]}
         # Track the time after driver drove in to parking spot,
         # Track the time from parking spot to before driver drive vehicle out
-        self.service_stats = {"parking": {}, "retrieval": {}}
+        self.service_stats = {"parking": {}}
         self.waiting_stats = {"parking": {}, "retrieval": {}}
 
         self.stats = {
@@ -130,7 +130,6 @@ class StatsBox:
         parking_dict = self.waiting_stats["parking"]
         retrieval_dict = self.waiting_stats["retrieval"]
         service_parking_dict = self.service_stats["parking"]
-        service_retrieval_dict = self.service_stats["retrieval"]
         floors_occupancy = self.utilization_stats["floors"]
 
         period = os.environ["PERIOD"]
@@ -142,7 +141,6 @@ class StatsBox:
                 "parking": parking_dict,
                 "retrieval": retrieval_dict,
                 "service_parking": service_parking_dict,
-                "service_retrieval": service_retrieval_dict,
                 "floors_occupancy": floors_occupancy,
             }
             pickle.dump(data_to_dump, file)
@@ -154,14 +152,12 @@ class StatsBox:
 
         ax1 = fig.add_subplot(gs[0, 0])  # First row, first column
         ax2 = fig.add_subplot(gs[0, 1])  # First row, second column
-        ax3 = fig.add_subplot(gs[1, 0])  # Second row, first column
-        ax4 = fig.add_subplot(gs[1, 1])  # Second row, second column
+        ax3 = fig.add_subplot(gs[1, :])  # Second row, span all column
         ax5 = fig.add_subplot(gs[2, :])  # Second row, span all column
 
         self.plot_waiting_service_time(parking_dict, "waiting", "Parking", ax1)
         self.plot_waiting_service_time(retrieval_dict, "waiting", "Retrieval", ax2)
         self.plot_waiting_service_time(service_parking_dict, "service", "Parking", ax3)
-        self.plot_waiting_service_time(service_retrieval_dict, "service", "Retrieval", ax4)
         self.plot_floors_trend(floors_occupancy, "Level", ax5)
 
         fig.suptitle(f"{instance_type}")
@@ -203,6 +199,6 @@ class StatsBox:
         ax.yaxis.set_major_formatter(mtick.PercentFormatter(1.0))
         ax.set_xlabel("Time (Interval of 5 mins)")
         ax.set_ylabel(f"Parking Occupancy/Level")
-        ax.set_title(f"{title} {idx+1}")
+        ax.set_title(f"Level Occupancy")
         ax.set_xticklabels(ax.get_xticks(), rotation=45)
         ax.legend()

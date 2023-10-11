@@ -43,11 +43,7 @@ def run(env, renderer, carpark, car_id, delay, logger):
     vehicle = carpark.parking_queue.pop(0)
 
     renderer.add(vehicle)
-    yield env.process(carpark.park(vehicle))
-
-    # Log waiting time - END
-    time_end = env.now
-    carpark.stats_box.waiting_stats["parking"][vehicle.id] = round(time_end - time_start, 2)
+    yield env.process(carpark.park(vehicle, time_start))
 
     duration = weibull_min.rvs(c=CAR_DURATION_SHAPE, scale=CAR_DURATION_SCALE) * 60
     # duration = expon.rvs(scale=1 / CAR_RATE)
