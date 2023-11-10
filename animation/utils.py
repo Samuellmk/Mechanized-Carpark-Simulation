@@ -4,9 +4,10 @@ from os.path import isfile, join
 from os import listdir
 from constants import *
 
-from animation.init import Lift_Floor, Shuttle_Floor, Parking_Floor
+from animation.init import Lift_Floor, Shuttle_Floor, Parking_Floor, Lobby_Floor
 from classes.lift import Lift
 from classes.shuttle import Shuttle
+from classes.lobby import Lobby
 from pygame.math import Vector2
 
 FRAME_RATE = FPS * FACTOR
@@ -63,9 +64,23 @@ def load_sprite_sheets(dir1, direction=False):
 
 def findCoord(level_layout, destObj):
     for sprite in level_layout.sprites():
-        if isinstance(sprite, Lift_Floor) and isinstance(destObj, Lift) and sprite.id == destObj.num:
+        if (
+            isinstance(sprite, Lift_Floor)
+            and isinstance(destObj, Lift)
+            and sprite.id == destObj.num
+        ):
             return sprite.rect.topleft
-        elif isinstance(sprite, Shuttle_Floor) and isinstance(destObj, Shuttle) and sprite.id == destObj.num:
+        elif (
+            isinstance(sprite, Lobby_Floor)
+            and isinstance(destObj, Lobby)
+            and sprite.id == destObj.num
+        ):
+            return sprite.rect.topleft
+        elif (
+            isinstance(sprite, Shuttle_Floor)
+            and isinstance(destObj, Shuttle)
+            and sprite.id == destObj.num
+        ):
             return sprite.rect.topleft
         elif isinstance(sprite, Parking_Floor) and sprite.id == destObj:
             # logger.info(sprite)
@@ -91,7 +106,9 @@ def findShuttle(level_layout, shuttle):
 def moveIntoGroundLift(vehicle, dest_coord, time_duration):
     dest_x, dest_y = dest_coord
     destination = Vector2(dest_x + vehicle.rect.width / 2, dest_y)
-    vehicle.pos = Vector2(destination[0], destination[1] + LIFT_IN_OUT_PX)  # Spawn and put below
+    vehicle.pos = Vector2(
+        destination[0], destination[1] + LIFT_IN_OUT_PX
+    )  # Spawn and put below
     velo = Vector2(0, (dest_y - vehicle.pos[1]) / (time_duration * FRAME_RATE))
     moveVehicle(vehicle, velo, destination)
 
@@ -154,9 +171,13 @@ def movePalletToLot(vehicle, time_duration, coord):
     moveVehicle(vehicle, (0, y), (dest_x - x_offset, dest_y))
 
 
-def moveLift(env, layout, lift, dest, time_duration, vehicle=None, logger=None, fromWhere=None):
+def moveLift(
+    env, layout, lift, dest, time_duration, vehicle=None, logger=None, fromWhere=None
+):
     try:
-        logger.info("[%s] Lift %d: Dest %d, pos: %d" % (fromWhere, lift.num, dest, lift.pos))
+        logger.info(
+            "[%s] Lift %d: Dest %d, pos: %d" % (fromWhere, lift.num, dest, lift.pos)
+        )
         # -ve = going down; +ve = going up; 0 = no change
         no_of_levels = dest - lift.pos
         lifts_dict = findAllLifts(layout, lift)

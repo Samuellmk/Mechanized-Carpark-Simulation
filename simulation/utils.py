@@ -34,7 +34,9 @@ def generate_times(car_arrival, logger):
 
 def run(env, renderer, carpark, car_id, delay, logger):
     yield env.timeout(delay)
-    logger.info("Car %d arrived at the entrance of the carpark at %.2f." % (car_id, env.now))
+    logger.info(
+        "Car %d arrived at the entrance of the carpark at %.2f." % (car_id, env.now)
+    )
     # Log waiting time - START
     time_start = env.now
 
@@ -48,7 +50,8 @@ def run(env, renderer, carpark, car_id, delay, logger):
     duration = weibull_min.rvs(c=CAR_DURATION_SHAPE, scale=CAR_DURATION_SCALE) * 60
     # duration = expon.rvs(scale=1 / CAR_RATE)
     # duration = 0.7  # 0.7  # 0.67  # 0.65  # 0.6  # 0.46  # 0.42  # 0.4  # 0.35  # 0.3
-    # duration = random.randint(60, 100)
+    # duration = random.randint(1, 2)
+    # duration = 15
     vehicle.popup.set_text("exiting time", round(env.now + duration, 2))
     logger.info(
         "Car %d will be retrieved from parking lot %d at %.2f (+%.2f)"
@@ -60,21 +63,44 @@ def run(env, renderer, carpark, car_id, delay, logger):
         )
     )
 
+    buffer = duration - CALL_FOR_RETRIEVAL
+    buffer_duration = env.timeout(buffer)
     if carpark.policy == "Cache" and vehicle.parking_lot[0] == 0:
-        # Wait for the retrieval time
-        exiting = env.timeout(duration)
-
-        move_process = env.process(carpark.move_vehicle_on_idle_shuttle(vehicle, parking_lot_request))
-
-        yield exiting | move_process
+        # Drivers will alert 10 mins before collecting their vehicles
+        move_process = env.process(
+            carpark.move_vehicle_on_idle_shuttle(vehicle, parking_lot_request)
+        )
+        yield buffer_duration | move_process
 
         if not move_process.triggered:
             move_process.interrupt()
         else:
-            yield exiting
-            env.process(carpark.exit(vehicle, parking_lot_request))
+            yield buffer_duration
+            yield env.process(
+                move_ground_to_exit(env, carpark, vehicle, parking_lot_request)
+            )
+
     else:
-        start_delayed(env, carpark.exit(vehicle, parking_lot_request), delay=duration)
+        yield buffer_duration
+        yield env.process(
+            move_ground_to_exit(env, carpark, vehicle, parking_lot_request)
+        )
+
+
+def move_ground_to_exit(env, carpark, vehicle, parking_lot_request):
+    remain_time = env.timeout(CALL_FOR_RETRIEVAL)
+    remain_time_end = env.now + CALL_FOR_RETRIEVAL
+
+    if vehicle.parking_lot[0] > 0:
+        print("Car %d: Driver called for retrieval at %.2f" % (vehicle.id, env.now))
+        ground_time_process = env.process(
+            carpark.move_to_ground_level(vehicle, remain_time_end)
+        )
+
+        yield ground_time_process
+
+    yield remain_time
+    env.process(carpark.exit(vehicle, parking_lot_request))
 
 
 def vehicle_arrival(env, renderer, carpark, logger):
@@ -94,7 +120,7 @@ def vehicle_arrival(env, renderer, carpark, logger):
             random_times_list = generate_times(car_arrival, logger)
             formatted_list = ", ".join(map(str, random_times_list))
             logger.info(f"Random list: {formatted_list}")
-            delay = 0.0
+
             for random_time in random_times_list:
                 popup = Popup(car_id)
 
@@ -122,7 +148,9 @@ def vehicle_arrival(env, renderer, carpark, logger):
 def lift_wrt_lot(pos, v_lot, a_lot, turning):
     time_taken_from_lift_to_pallet = round(WIDTH_PER_CAR / PALLET_SPEED, 2)
 
-    time_taken_from_origin_to_lot = round((WIDTH_PER_CAR * (abs(pos - v_lot))) / SHUTTLE_SPEED, 2)
+    time_taken_from_origin_to_lot = round(
+        (WIDTH_PER_CAR * (abs(pos - v_lot))) / SHUTTLE_SPEED, 2
+    )
 
     # Rotate vehicle
     time_taken_to_rotate = round(180 / (ROTARY * 360), 2)
@@ -159,7 +187,7 @@ def lift_wrt_lot(pos, v_lot, a_lot, turning):
     return time_takens
 
 
-def create_lifts_data(lifts_pos):
+def create_lifts_data(lifts_pos, cache=False):
     lifts = []
     for lift in lifts_pos:
         cur_lots = {}
@@ -168,8 +196,9 @@ def create_lifts_data(lifts_pos):
             cur_lots[v_lot] = lift_wrt_lot(lift, v_lot, v_lot, True)
 
         # South-West part of carpark
+        range_end = 5 if cache else 8  # for cache
         a_lot = 27
-        for v_lot in range(1, 8):
+        for v_lot in range(1, range_end):
             cur_lots[a_lot] = lift_wrt_lot(lift, v_lot, a_lot, True)
             a_lot += 1
 
@@ -184,13 +213,20 @@ def create_lifts_data(lifts_pos):
     return lifts
 
 
-def collect_floor(env, carpark):
+def collect_floor(env, carpark, instance_type):
     floors = carpark.stats_box.utilization_stats["floors"]
+
+    isCache = True if instance_type == "Cache" else False
 
     while True:
         for lvl in range(NUM_OF_LEVELS):
-            cars_per_lvl = NUM_OF_PARKING_PER_LEVEL - carpark.available_parking_lots_per_level[lvl]
-            floors[lvl].append(cars_per_lvl / NUM_OF_PARKING_PER_LEVEL)
+            parking_per_level = NUM_OF_PARKING_PER_LEVEL
+            if lvl == 0 and isCache:
+                parking_per_level = NUM_OF_PARKING_LOBBY
+            cars_per_lvl = (
+                parking_per_level - carpark.available_parking_lots_per_level[lvl]
+            )
+            floors[lvl].append(cars_per_lvl / parking_per_level)
 
         yield env.timeout(DATA_COLLECTION_INTERVAL)
 
@@ -202,7 +238,9 @@ def logging_setup(type):
     logger.setLevel(logging.DEBUG)
 
     # Create a formatter
-    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
 
     # Create a handler for stdout (console)
     console_handler = logging.StreamHandler()

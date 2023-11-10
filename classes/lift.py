@@ -7,11 +7,12 @@ import simpy
 
 
 class Lift:
-    def __init__(self, env, num, travel_times, default_level):
+    def __init__(self, env, num, travel_times, default_level, lobby_times):
         self.env = env
         self.num = num
         self.travel_times = travel_times
         self.pos = default_level
+        self.travel_times_lobby = lobby_times
 
     def time_taken_from_origin_to_dest(self, dest):
         time_taken = (abs(self.pos - dest)) * (HEIGHT_PER_LEVEL / LIFT_SPEED)

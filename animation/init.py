@@ -26,7 +26,9 @@ class Object(pygame.sprite.Sprite):
         self.image.blit(text_surface, text_rect.topleft)
 
 
-def generate_floor_texture(width, height, base_image_path, source_rect, border_color=None):
+def generate_floor_texture(
+    width, height, base_image_path, source_rect, border_color=None
+):
     # Load the base image
     image = pygame.image.load(base_image_path).convert_alpha()
 
@@ -65,6 +67,24 @@ class Parking_Floor(Object):
         self.add_text("P" + str(id), 18)
 
 
+class Lobby_Floor(Object):
+    def __init__(self, x, y, width, height, id):
+        super().__init__(x, y, width, height, id)
+        self.id = id
+        self.floor = generate_floor_texture(
+            width,
+            height,
+            join("assets", "Floor", "floor_tiles.png"),
+            pygame.Rect(96, 0, 32, 32),
+            (0, 0, 0),
+        )
+        self.set_overlay()
+
+    def set_overlay(self):
+        self.image.blit(self.floor, (0, 0))
+        self.add_text("Lobby " + str(self.id), 18)
+
+
 class Lift_Floor(Object):
     def __init__(self, x, y, width, height, id, level_no):
         super().__init__(x, y, width, height, id)
@@ -88,7 +108,9 @@ class Lift_Floor(Object):
         self.image.blit(self.floor, (0, 0))
         self.add_text("Lift " + str(self.id), 18)
         if not self.is_Occupied:
-            surface = pygame.Surface((self.image.get_width(), self.image.get_height()), pygame.SRCALPHA)
+            surface = pygame.Surface(
+                (self.image.get_width(), self.image.get_height()), pygame.SRCALPHA
+            )
             surface.fill((106, 106, 106, 178))  # 60%
             self.image.blit(surface, (0, 0))
 
@@ -173,21 +195,36 @@ class FloorLayout(pygame.sprite.Group):
         self.TOTAL_WIDTH = TOTAL_WIDTH
         self.floors_group = pygame.sprite.Group()
 
-    def create_floors_group(self):
+    def create_floors_group(self, isCache=False):
         floors_group_list = []
-        self.create_parking_floors(floors_group_list)
+        self.create_parking_floors(floors_group_list, isCache)
         self.create_lift_floors(floors_group_list)
-        self.create_south_parking_floors(floors_group_list)
+        if isCache:
+            self.create_lobby_floors(floors_group_list)
+        self.create_south_east_parking_floors(floors_group_list)
         self.create_wall_borders(floors_group_list)
         floors_group_list.reverse()
         for sprite in floors_group_list:
             self.floors_group.add(sprite)
 
+    def create_lobby_floors(self, floors_group):
+        lift_offset = self.horizontal_offset + 128
+        for i, lobby_no in enumerate(range(1, 2)):
+            floors_group.append(
+                Lobby_Floor(
+                    lift_offset + i * (3 * self.GRID_WIDTH),
+                    self.y_offset + 96,
+                    3 * self.GRID_WIDTH,
+                    self.GRID_HEIGHT,
+                    lobby_no,
+                )
+            )
+
     def create_wall_borders(self, floors_group):
         wall_borders = Wall_Borders(floors_group, "Level " + str(self.level_number))
         floors_group.append(wall_borders)
 
-    def create_parking_floors(self, floors_group):
+    def create_parking_floors(self, floors_group, isCache):
         for i in range(0, 26):
             floors_group.append(
                 Parking_Floor(
@@ -198,7 +235,10 @@ class FloorLayout(pygame.sprite.Group):
                     i + 1,
                 )
             )
-        for i, floor_number in enumerate(range(27, 34)):
+
+        range_end = 31 if isCache else 34
+
+        for i, floor_number in enumerate(range(27, range_end)):
             floors_group.append(
                 Parking_Floor(
                     self.horizontal_offset + i * self.GRID_WIDTH,
@@ -223,7 +263,7 @@ class FloorLayout(pygame.sprite.Group):
                 )
             )
 
-    def create_south_parking_floors(self, floors_group):
+    def create_south_east_parking_floors(self, floors_group):
         parking_offset_south = self.horizontal_offset + 608
         for i, parking_no in enumerate(range(34, 40)):
             floors_group.append(
